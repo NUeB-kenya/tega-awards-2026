@@ -14,16 +14,197 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          organization: string | null
+          phone: string | null
+          position: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          email: string
+          full_name: string
+          id?: string
+          organization?: string | null
+          phone?: string | null
+          position?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          organization?: string | null
+          phone?: string | null
+          position?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      scores: {
+        Row: {
+          comments: string | null
+          created_at: string
+          id: string
+          impact_score: number | null
+          innovation_score: number | null
+          judge_id: string
+          overall_score: number | null
+          scalability_score: number | null
+          submission_id: string
+          sustainability_score: number | null
+          updated_at: string
+        }
+        Insert: {
+          comments?: string | null
+          created_at?: string
+          id?: string
+          impact_score?: number | null
+          innovation_score?: number | null
+          judge_id: string
+          overall_score?: number | null
+          scalability_score?: number | null
+          submission_id: string
+          sustainability_score?: number | null
+          updated_at?: string
+        }
+        Update: {
+          comments?: string | null
+          created_at?: string
+          id?: string
+          impact_score?: number | null
+          innovation_score?: number | null
+          judge_id?: string
+          overall_score?: number | null
+          scalability_score?: number | null
+          submission_id?: string
+          sustainability_score?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scores_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      submissions: {
+        Row: {
+          award_categories: string[] | null
+          communication_preference: string | null
+          created_at: string
+          id: string
+          institution_size: string | null
+          institution_type: string | null
+          nomination_statement: string
+          nominator_email: string
+          nominator_name: string
+          nominator_phone: string | null
+          nominator_role: string | null
+          past_awards: string | null
+          school_city: string
+          school_country: string
+          school_name: string
+          status: string
+          submitter_id: string
+          updated_at: string
+        }
+        Insert: {
+          award_categories?: string[] | null
+          communication_preference?: string | null
+          created_at?: string
+          id?: string
+          institution_size?: string | null
+          institution_type?: string | null
+          nomination_statement: string
+          nominator_email: string
+          nominator_name: string
+          nominator_phone?: string | null
+          nominator_role?: string | null
+          past_awards?: string | null
+          school_city: string
+          school_country: string
+          school_name: string
+          status?: string
+          submitter_id: string
+          updated_at?: string
+        }
+        Update: {
+          award_categories?: string[] | null
+          communication_preference?: string | null
+          created_at?: string
+          id?: string
+          institution_size?: string | null
+          institution_type?: string | null
+          nomination_statement?: string
+          nominator_email?: string
+          nominator_name?: string
+          nominator_phone?: string | null
+          nominator_role?: string | null
+          past_awards?: string | null
+          school_city?: string
+          school_country?: string
+          school_name?: string
+          status?: string
+          submitter_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_judge: { Args: never; Returns: boolean }
+      is_secretariat: { Args: never; Returns: boolean }
+      is_submitter: { Args: never; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "submitter" | "judge" | "secretariat"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +331,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["submitter", "judge", "secretariat"],
+    },
   },
 } as const

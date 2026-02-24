@@ -1,5 +1,6 @@
-import { useLocation } from "react-router-dom";
+import { useLocation, Link } from "react-router-dom";
 import { useEffect } from "react";
+import tegaLogo from '@/assets/tega-logo.png';
 
 const NotFound = () => {
   const location = useLocation();
@@ -9,13 +10,14 @@ const NotFound = () => {
   }, [location.pathname]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">404</h1>
-        <p className="mb-4 text-xl text-muted-foreground">Oops! Page not found</p>
-        <a href="/" className="text-primary underline hover:text-primary/90">
-          Return to Home
-        </a>
+    <div className="flex min-h-screen items-center justify-center bg-gradient-dark">
+      <div className="text-center animate-fade-in">
+        <img src={tegaLogo} alt="TEGA" className="mx-auto mb-6 h-20 w-20" />
+        <h1 className="mb-4 font-display text-6xl font-bold text-gradient-gold">404</h1>
+        <p className="mb-6 text-xl text-muted-foreground">Page not found</p>
+        <Link to="/auth" className="inline-block rounded-lg bg-gradient-gold px-6 py-3 font-semibold text-primary-foreground hover:opacity-90 transition-opacity">
+          Return Home
+        </Link>
       </div>
     </div>
   );

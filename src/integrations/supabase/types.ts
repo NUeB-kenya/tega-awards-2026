@@ -14,10 +14,83 @@ export type Database = {
   }
   public: {
     Tables: {
+      judge_assignments: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          id: string
+          judge_id: string
+          started_at: string
+          status: string
+          submission_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          judge_id: string
+          started_at?: string
+          status?: string
+          submission_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          judge_id?: string
+          started_at?: string
+          status?: string
+          submission_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "judge_assignments_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean
+          link: string | null
+          message: string
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          link?: string | null
+          message: string
+          title: string
+          type?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          link?: string | null
+          message?: string
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
+          country: string | null
           created_at: string
+          credentials_path: string | null
           email: string
           full_name: string
           id: string
@@ -29,7 +102,9 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          country?: string | null
           created_at?: string
+          credentials_path?: string | null
           email: string
           full_name: string
           id?: string
@@ -41,7 +116,9 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          country?: string | null
           created_at?: string
+          credentials_path?: string | null
           email?: string
           full_name?: string
           id?: string
@@ -57,6 +134,8 @@ export type Database = {
         Row: {
           comments: string | null
           created_at: string
+          document_satisfaction: number | null
+          documents_legitimate: boolean | null
           id: string
           impact_score: number | null
           innovation_score: number | null
@@ -66,10 +145,14 @@ export type Database = {
           submission_id: string
           sustainability_score: number | null
           updated_at: string
+          verification_notes: string | null
+          verification_source: string | null
         }
         Insert: {
           comments?: string | null
           created_at?: string
+          document_satisfaction?: number | null
+          documents_legitimate?: boolean | null
           id?: string
           impact_score?: number | null
           innovation_score?: number | null
@@ -79,10 +162,14 @@ export type Database = {
           submission_id: string
           sustainability_score?: number | null
           updated_at?: string
+          verification_notes?: string | null
+          verification_source?: string | null
         }
         Update: {
           comments?: string | null
           created_at?: string
+          document_satisfaction?: number | null
+          documents_legitimate?: boolean | null
           id?: string
           impact_score?: number | null
           innovation_score?: number | null
@@ -92,6 +179,8 @@ export type Database = {
           submission_id?: string
           sustainability_score?: number | null
           updated_at?: string
+          verification_notes?: string | null
+          verification_source?: string | null
         }
         Relationships: [
           {
@@ -103,64 +192,117 @@ export type Database = {
           },
         ]
       }
+      submission_documents: {
+        Row: {
+          category: string
+          created_at: string
+          file_name: string
+          file_path: string
+          file_size: number | null
+          id: string
+          mime_type: string | null
+          submission_id: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          id?: string
+          mime_type?: string | null
+          submission_id: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          id?: string
+          mime_type?: string | null
+          submission_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "submission_documents_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       submissions: {
         Row: {
+          approval_status: string
           award_categories: string[] | null
           communication_preference: string | null
           created_at: string
           id: string
           institution_size: string | null
           institution_type: string | null
+          is_locked: boolean
           nomination_statement: string
           nominator_email: string
           nominator_name: string
           nominator_phone: string | null
           nominator_role: string | null
           past_awards: string | null
+          region: string | null
           school_city: string
           school_country: string
           school_name: string
           status: string
+          submission_count: number
           submitter_id: string
           updated_at: string
         }
         Insert: {
+          approval_status?: string
           award_categories?: string[] | null
           communication_preference?: string | null
           created_at?: string
           id?: string
           institution_size?: string | null
           institution_type?: string | null
+          is_locked?: boolean
           nomination_statement: string
           nominator_email: string
           nominator_name: string
           nominator_phone?: string | null
           nominator_role?: string | null
           past_awards?: string | null
+          region?: string | null
           school_city: string
           school_country: string
           school_name: string
           status?: string
+          submission_count?: number
           submitter_id: string
           updated_at?: string
         }
         Update: {
+          approval_status?: string
           award_categories?: string[] | null
           communication_preference?: string | null
           created_at?: string
           id?: string
           institution_size?: string | null
           institution_type?: string | null
+          is_locked?: boolean
           nomination_statement?: string
           nominator_email?: string
           nominator_name?: string
           nominator_phone?: string | null
           nominator_role?: string | null
           past_awards?: string | null
+          region?: string | null
           school_city?: string
           school_country?: string
           school_name?: string
           status?: string
+          submission_count?: number
           submitter_id?: string
           updated_at?: string
         }
@@ -199,12 +341,13 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_admin: { Args: never; Returns: boolean }
       is_judge: { Args: never; Returns: boolean }
       is_secretariat: { Args: never; Returns: boolean }
       is_submitter: { Args: never; Returns: boolean }
     }
     Enums: {
-      app_role: "submitter" | "judge" | "secretariat"
+      app_role: "submitter" | "judge" | "secretariat" | "admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -332,7 +475,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["submitter", "judge", "secretariat"],
+      app_role: ["submitter", "judge", "secretariat", "admin"],
     },
   },
 } as const

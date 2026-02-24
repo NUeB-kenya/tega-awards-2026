@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { User, Session } from '@supabase/supabase-js';
 
-export type AppRole = 'submitter' | 'judge' | 'secretariat';
+export type AppRole = 'submitter' | 'judge' | 'secretariat' | 'admin';
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
@@ -18,7 +18,6 @@ export function useAuth() {
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Fetch role
           setTimeout(async () => {
             const { data: roleData } = await supabase
               .from('user_roles')
@@ -57,12 +56,12 @@ export function useAuth() {
     return { error };
   };
 
-  const signUp = async (email: string, password: string, fullName: string) => {
+  const signUp = async (email: string, password: string, fullName: string, country?: string) => {
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        data: { full_name: fullName },
+        data: { full_name: fullName, country },
         emailRedirectTo: window.location.origin,
       },
     });

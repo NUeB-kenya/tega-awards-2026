@@ -2,7 +2,8 @@ import { useAuth, AppRole } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import tegaLogo from '@/assets/tega-logo.png';
-import { LogOut, LayoutDashboard, FileText, Users, Award, Settings } from 'lucide-react';
+import NotificationBell from '@/components/NotificationBell';
+import { LogOut, LayoutDashboard, FileText, Users, Award, Settings, Shield, CheckSquare } from 'lucide-react';
 
 const navItems: Record<AppRole, { label: string; href: string; icon: React.ElementType }[]> = {
   submitter: [
@@ -21,6 +22,13 @@ const navItems: Record<AppRole, { label: string; href: string; icon: React.Eleme
     { label: 'Judges', href: '/secretariat/judges', icon: Users },
     { label: 'Scores', href: '/secretariat/scores', icon: Award },
     { label: 'Manage Users', href: '/secretariat/users', icon: Settings },
+    { label: 'Statistics', href: '/secretariat/statistics', icon: CheckSquare },
+  ],
+  admin: [
+    { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+    { label: 'Approvals', href: '/admin/approvals', icon: Shield },
+    { label: 'All Submissions', href: '/admin/submissions', icon: FileText },
+    { label: 'Messaging', href: '/admin/messaging', icon: Users },
   ],
 };
 
@@ -35,12 +43,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     navigate('/auth');
   };
 
-  const roleLabel = role === 'secretariat' ? 'Secretariat' : role === 'judge' ? 'Judge' : 'Submitter';
-  const roleBadgeColor = role === 'secretariat' ? 'bg-destructive/20 text-destructive' : role === 'judge' ? 'bg-primary/20 text-primary' : 'bg-success/20 text-success';
+  const roleLabel = role === 'secretariat' ? 'Secretariat' : role === 'judge' ? 'Judge' : role === 'admin' ? 'Admin' : 'Applicant';
+  const roleBadgeColor = role === 'secretariat' ? 'bg-destructive/20 text-destructive' : role === 'judge' ? 'bg-primary/20 text-primary' : role === 'admin' ? 'bg-accent/20 text-accent' : 'bg-success/20 text-success';
 
   return (
     <div className="flex min-h-screen bg-background">
-      {/* Sidebar */}
       <aside className="fixed left-0 top-0 z-40 h-screen w-64 border-r border-border bg-sidebar flex flex-col">
         <div className="flex items-center gap-3 border-b border-border p-5">
           <img src={tegaLogo} alt="TEGA" className="h-10 w-10" />
@@ -82,6 +89,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 {roleLabel}
               </span>
             </div>
+            <NotificationBell />
           </div>
           <Button variant="outline" size="sm" className="w-full gap-2 border-border" onClick={handleSignOut}>
             <LogOut className="h-3.5 w-3.5" />
@@ -90,7 +98,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       </aside>
 
-      {/* Main content */}
       <main className="ml-64 flex-1 p-8">
         {children}
       </main>

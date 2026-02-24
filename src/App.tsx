@@ -14,6 +14,9 @@ import SecretariatSubmissions from "./pages/SecretariatSubmissions";
 import SecretariatJudges from "./pages/SecretariatJudges";
 import SecretariatScores from "./pages/SecretariatScores";
 import SecretariatUsers from "./pages/SecretariatUsers";
+import SecretariatStatistics from "./pages/SecretariatStatistics";
+import AdminApprovals from "./pages/AdminApprovals";
+import AdminMessaging from "./pages/AdminMessaging";
 import ProtectedRoute from "./components/ProtectedRoute";
 import NotFound from "./pages/NotFound";
 
@@ -37,6 +40,10 @@ const App = () => (
           <Route path="/secretariat/judges" element={<ProtectedRoute allowedRoles={['secretariat']}><SecretariatJudges /></ProtectedRoute>} />
           <Route path="/secretariat/scores" element={<ProtectedRoute allowedRoles={['secretariat']}><SecretariatScores /></ProtectedRoute>} />
           <Route path="/secretariat/users" element={<ProtectedRoute allowedRoles={['secretariat']}><SecretariatUsers /></ProtectedRoute>} />
+          <Route path="/secretariat/statistics" element={<ProtectedRoute allowedRoles={['secretariat']}><SecretariatStatistics /></ProtectedRoute>} />
+          <Route path="/admin/approvals" element={<ProtectedRoute allowedRoles={['admin']}><AdminApprovals /></ProtectedRoute>} />
+          <Route path="/admin/submissions" element={<ProtectedRoute allowedRoles={['admin']}><SecretariatSubmissions /></ProtectedRoute>} />
+          <Route path="/admin/messaging" element={<ProtectedRoute allowedRoles={['admin']}><AdminMessaging /></ProtectedRoute>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

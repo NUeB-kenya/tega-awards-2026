@@ -28,7 +28,8 @@ export default function JudgeSubmissions() {
   const [viewDocs, setViewDocs] = useState<any[] | null>(null);
 
   const [scoreForm, setScoreForm] = useState({
-    innovation: 5, impact: 5, scalability: 5, sustainability: 5,
+    impact: 5, innovation: 5, scalability: 5, equity: 5,
+    sustainability: 5, evidence: 5, ethics: 5,
     document_satisfaction: 5, documents_legitimate: true,
     verification_source: '', verification_notes: '', comments: '',
   });
@@ -94,10 +95,13 @@ export default function JudgeSubmissions() {
   const openScoring = (subId: string) => {
     const existing = scores[subId];
     setScoreForm({
-      innovation: existing?.innovation_score ?? 5,
       impact: existing?.impact_score ?? 5,
+      innovation: existing?.innovation_score ?? 5,
       scalability: existing?.scalability_score ?? 5,
+      equity: existing?.criterion_equity ?? 5,
       sustainability: existing?.sustainability_score ?? 5,
+      evidence: existing?.criterion_evidence ?? 5,
+      ethics: existing?.criterion_ethics ?? 5,
       document_satisfaction: existing?.document_satisfaction ?? 5,
       documents_legitimate: existing?.documents_legitimate ?? true,
       verification_source: existing?.verification_source ?? '',
@@ -111,10 +115,10 @@ export default function JudgeSubmissions() {
     if (!user || !scoringId) return;
     const existing = scores[scoringId];
     
-    // Calculate overall: innovation(20%) + impact(20%) + scalability(20%) + sustainability(20%) + doc_satisfaction(20%)
+    // Weighted scoring: Impact(30%) + Innovation(15%) + Scalability(15%) + Equity(10%) + Sustainability(10%) + Evidence(10%) + Ethics(10%)
     const overall = (
-      (scoreForm.innovation * 2) + (scoreForm.impact * 2) + (scoreForm.scalability * 2) + 
-      (scoreForm.sustainability * 2) + (scoreForm.document_satisfaction * 2)
+      (scoreForm.impact * 3) + (scoreForm.innovation * 1.5) + (scoreForm.scalability * 1.5) + 
+      (scoreForm.equity * 1) + (scoreForm.sustainability * 1) + (scoreForm.evidence * 1) + (scoreForm.ethics * 1)
     );
 
     const payload = {
@@ -124,6 +128,9 @@ export default function JudgeSubmissions() {
       impact_score: scoreForm.impact,
       scalability_score: scoreForm.scalability,
       sustainability_score: scoreForm.sustainability,
+      criterion_equity: scoreForm.equity,
+      criterion_evidence: scoreForm.evidence,
+      criterion_ethics: scoreForm.ethics,
       document_satisfaction: scoreForm.document_satisfaction,
       documents_legitimate: scoreForm.documents_legitimate,
       verification_source: scoreForm.verification_source,
@@ -331,8 +338,8 @@ export default function JudgeSubmissions() {
             </DialogHeader>
             <div className="space-y-6">
               <div className="bg-secondary/50 rounded-lg p-4 text-sm">
-                <p className="font-semibold mb-1">Scoring Guide</p>
-                <p className="text-muted-foreground">Each criterion is scored 0-10 and weighted equally (20% each). Total = 100%.</p>
+                <p className="font-semibold mb-1">Prestige Scoring Rubric</p>
+                <p className="text-muted-foreground">Each criterion scored 0–10, auto-weighted to 100%. Minimum 80/100 average to win.</p>
               </div>
 
               {/* Document verification */}
@@ -371,37 +378,58 @@ export default function JudgeSubmissions() {
                 </div>
               </div>
 
-              {/* Core scoring */}
+              {/* Core scoring - weighted rubric */}
               <div className="space-y-4">
-                <h3 className="font-semibold">Core Criteria (20% each)</h3>
+                <h3 className="font-semibold">Scoring Criteria</h3>
                 {([
-                  { key: 'innovation', label: 'Innovation - How novel and creative is this initiative?' },
-                  { key: 'impact', label: 'Impact - What measurable outcomes has this achieved?' },
-                  { key: 'scalability', label: 'Scalability - Can this be replicated across other contexts?' },
-                  { key: 'sustainability', label: 'Sustainability - Is this initiative sustainable long-term?' },
-                ] as const).map(({ key, label }) => (
+                  { key: 'impact', label: 'Impact & Outcomes (30%) — Measurable results, learning outcomes, retention, equity gains', weight: 30 },
+                  { key: 'innovation', label: 'Innovation & Originality (15%) — Novel approach, solves real constraints', weight: 15 },
+                  { key: 'scalability', label: 'Scalability & Replicability (15%) — Can scale to more learners/regions', weight: 15 },
+                  { key: 'equity', label: 'Equity, Inclusion & Access (10%) — Inclusive design, reaching underserved groups', weight: 10 },
+                  { key: 'sustainability', label: 'Sustainability & Governance (10%) — Long-term viability, financial resilience', weight: 10 },
+                  { key: 'evidence', label: 'Evidence & Verification (10%) — Quality of documentation, third-party proof', weight: 10 },
+                  { key: 'ethics', label: 'Ethics, Safety & Integrity (10%) — Child safeguarding, data privacy, transparency', weight: 10 },
+                ] as const).map(({ key, label, weight }) => (
                   <div key={key}>
                     <Label>{label} (0-10)</Label>
                     <Input type="number" min={0} max={10}
                       value={scoreForm[key]}
                       onChange={e => setScoreForm(p => ({ ...p, [key]: parseInt(e.target.value) || 0 }))}
                       className="mt-1 bg-secondary w-24" />
+                    {scoreForm[key] < 4 && (
+                      <p className="text-xs text-destructive mt-1">⚠ Low score — comment required below</p>
+                    )}
                   </div>
                 ))}
               </div>
 
               <div>
-                <Label>Additional Comments</Label>
+                <Label>Additional Comments {([scoreForm.impact, scoreForm.innovation, scoreForm.scalability, scoreForm.equity, scoreForm.sustainability, scoreForm.evidence, scoreForm.ethics].some(v => v < 4)) ? '(Required — low score given)' : ''}</Label>
                 <Textarea value={scoreForm.comments}
                   onChange={e => setScoreForm(p => ({ ...p, comments: e.target.value }))}
                   className="mt-1 bg-secondary" />
               </div>
 
-              <div className="bg-secondary/50 rounded-lg p-4 text-sm">
+              <div className="bg-secondary/50 rounded-lg p-4 text-sm space-y-1">
                 <p className="font-semibold">Projected Overall Score: {
-                  ((scoreForm.innovation * 2) + (scoreForm.impact * 2) + (scoreForm.scalability * 2) + 
-                  (scoreForm.sustainability * 2) + (scoreForm.document_satisfaction * 2))
+                  ((scoreForm.impact * 3) + (scoreForm.innovation * 1.5) + (scoreForm.scalability * 1.5) + 
+                  (scoreForm.equity * 1) + (scoreForm.sustainability * 1) + (scoreForm.evidence * 1) + (scoreForm.ethics * 1))
                 }/100</p>
+                <p className="text-muted-foreground text-xs">
+                  {((scoreForm.impact * 3) + (scoreForm.innovation * 1.5) + (scoreForm.scalability * 1.5) + 
+                  (scoreForm.equity * 1) + (scoreForm.sustainability * 1) + (scoreForm.evidence * 1) + (scoreForm.ethics * 1)) >= 90
+                    ? '🏆 World-class, award-defining'
+                    : ((scoreForm.impact * 3) + (scoreForm.innovation * 1.5) + (scoreForm.scalability * 1.5) + 
+                    (scoreForm.equity * 1) + (scoreForm.sustainability * 1) + (scoreForm.evidence * 1) + (scoreForm.ethics * 1)) >= 80
+                    ? '⭐ Exceptional, category-leading'
+                    : ((scoreForm.impact * 3) + (scoreForm.innovation * 1.5) + (scoreForm.scalability * 1.5) + 
+                    (scoreForm.equity * 1) + (scoreForm.sustainability * 1) + (scoreForm.evidence * 1) + (scoreForm.ethics * 1)) >= 70
+                    ? '✓ Strong, credible contender'
+                    : ((scoreForm.impact * 3) + (scoreForm.innovation * 1.5) + (scoreForm.scalability * 1.5) + 
+                    (scoreForm.equity * 1) + (scoreForm.sustainability * 1) + (scoreForm.evidence * 1) + (scoreForm.ethics * 1)) >= 60
+                    ? '○ Promising but not yet elite'
+                    : '✗ Insufficient for finalist status'}
+                </p>
               </div>
 
               <Button className="w-full bg-gradient-gold font-semibold" onClick={handleScore}>

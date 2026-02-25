@@ -14,6 +14,133 @@ export type Database = {
   }
   public: {
     Tables: {
+      audit_logs: {
+        Row: {
+          action_type: string
+          created_at: string
+          entity_id: string | null
+          entity_type: string
+          id: string
+          metadata_json: Json | null
+          user_id: string
+        }
+        Insert: {
+          action_type: string
+          created_at?: string
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+          metadata_json?: Json | null
+          user_id: string
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          metadata_json?: Json | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      categories: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: number
+          name: string
+          requires_age_limit: boolean
+          requires_org_type: boolean
+          tier_type: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id: number
+          name: string
+          requires_age_limit?: boolean
+          requires_org_type?: boolean
+          tier_type?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: number
+          name?: string
+          requires_age_limit?: boolean
+          requires_org_type?: boolean
+          tier_type?: string
+        }
+        Relationships: []
+      }
+      conflict_declarations: {
+        Row: {
+          conflict_reason: string
+          created_at: string
+          id: string
+          judge_id: string
+          resolved: boolean
+          submission_id: string
+        }
+        Insert: {
+          conflict_reason: string
+          created_at?: string
+          id?: string
+          judge_id: string
+          resolved?: boolean
+          submission_id: string
+        }
+        Update: {
+          conflict_reason?: string
+          created_at?: string
+          id?: string
+          judge_id?: string
+          resolved?: boolean
+          submission_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conflict_declarations_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      evidence_files: {
+        Row: {
+          file_type: string
+          file_url: string
+          id: string
+          submission_id: string
+          uploaded_at: string
+        }
+        Insert: {
+          file_type: string
+          file_url: string
+          id?: string
+          submission_id: string
+          uploaded_at?: string
+        }
+        Update: {
+          file_type?: string
+          file_url?: string
+          id?: string
+          submission_id?: string
+          uploaded_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evidence_files_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       judge_assignments: {
         Row: {
           completed_at: string | null
@@ -85,6 +212,117 @@ export type Database = {
         }
         Relationships: []
       }
+      panel_judges: {
+        Row: {
+          created_at: string
+          id: string
+          judge_id: string
+          panel_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          judge_id: string
+          panel_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          judge_id?: string
+          panel_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "panel_judges_panel_id_fkey"
+            columns: ["panel_id"]
+            isOneToOne: false
+            referencedRelation: "panels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      panels: {
+        Row: {
+          category_id: number | null
+          chair_id: string | null
+          country_id: string | null
+          created_at: string
+          id: string
+          level: string
+          region_id: string | null
+        }
+        Insert: {
+          category_id?: number | null
+          chair_id?: string | null
+          country_id?: string | null
+          created_at?: string
+          id?: string
+          level: string
+          region_id?: string | null
+        }
+        Update: {
+          category_id?: number | null
+          chair_id?: string | null
+          country_id?: string | null
+          created_at?: string
+          id?: string
+          level?: string
+          region_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "panels_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payments: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          id: string
+          paid_at: string | null
+          payment_method: string | null
+          payment_status: string
+          submission_id: string
+          transaction_reference: string | null
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          paid_at?: string | null
+          payment_method?: string | null
+          payment_status?: string
+          submission_id: string
+          transaction_reference?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          paid_at?: string | null
+          payment_method?: string | null
+          payment_status?: string
+          submission_id?: string
+          transaction_reference?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -134,6 +372,9 @@ export type Database = {
         Row: {
           comments: string | null
           created_at: string
+          criterion_equity: number | null
+          criterion_ethics: number | null
+          criterion_evidence: number | null
           document_satisfaction: number | null
           documents_legitimate: boolean | null
           id: string
@@ -151,6 +392,9 @@ export type Database = {
         Insert: {
           comments?: string | null
           created_at?: string
+          criterion_equity?: number | null
+          criterion_ethics?: number | null
+          criterion_evidence?: number | null
           document_satisfaction?: number | null
           documents_legitimate?: boolean | null
           id?: string
@@ -168,6 +412,9 @@ export type Database = {
         Update: {
           comments?: string | null
           created_at?: string
+          criterion_equity?: number | null
+          criterion_ethics?: number | null
+          criterion_evidence?: number | null
           document_satisfaction?: number | null
           documents_legitimate?: boolean | null
           id?: string
@@ -236,7 +483,9 @@ export type Database = {
       submissions: {
         Row: {
           approval_status: string
+          average_score: number | null
           award_categories: string[] | null
+          category_id: number | null
           communication_preference: string | null
           created_at: string
           id: string
@@ -253,6 +502,7 @@ export type Database = {
           school_city: string
           school_country: string
           school_name: string
+          stage: string
           status: string
           submission_count: number
           submitter_id: string
@@ -260,7 +510,9 @@ export type Database = {
         }
         Insert: {
           approval_status?: string
+          average_score?: number | null
           award_categories?: string[] | null
+          category_id?: number | null
           communication_preference?: string | null
           created_at?: string
           id?: string
@@ -277,6 +529,7 @@ export type Database = {
           school_city: string
           school_country: string
           school_name: string
+          stage?: string
           status?: string
           submission_count?: number
           submitter_id: string
@@ -284,7 +537,9 @@ export type Database = {
         }
         Update: {
           approval_status?: string
+          average_score?: number | null
           award_categories?: string[] | null
+          category_id?: number | null
           communication_preference?: string | null
           created_at?: string
           id?: string
@@ -301,12 +556,21 @@ export type Database = {
           school_city?: string
           school_country?: string
           school_name?: string
+          stage?: string
           status?: string
           submission_count?: number
           submitter_id?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "submissions_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
@@ -347,7 +611,15 @@ export type Database = {
       is_submitter: { Args: never; Returns: boolean }
     }
     Enums: {
-      app_role: "submitter" | "judge" | "secretariat" | "admin"
+      app_role:
+        | "submitter"
+        | "judge"
+        | "secretariat"
+        | "admin"
+        | "country_coordinator"
+        | "panel_chair"
+        | "global_jury"
+        | "super_admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -475,7 +747,16 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["submitter", "judge", "secretariat", "admin"],
+      app_role: [
+        "submitter",
+        "judge",
+        "secretariat",
+        "admin",
+        "country_coordinator",
+        "panel_chair",
+        "global_jury",
+        "super_admin",
+      ],
     },
   },
 } as const

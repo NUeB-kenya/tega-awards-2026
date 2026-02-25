@@ -40,12 +40,14 @@ export default function SubmissionForm() {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [step, setStep] = useState<'section_a' | 'section_b' | 'review'>('section_a');
+  const [step, setStep] = useState<'section_a' | 'section_b' | 'payment' | 'review'>('section_a');
   const [existingSubmission, setExistingSubmission] = useState<any>(null);
   const [submissionCount, setSubmissionCount] = useState(0);
   const [isLocked, setIsLocked] = useState(false);
   const [categoryFiles, setCategoryFiles] = useState<Record<string, File[]>>({});
   const [uploadingDocs, setUploadingDocs] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState<'pending' | 'completed' | 'waived'>('pending');
+  const [processingPayment, setProcessingPayment] = useState(false);
 
   const [form, setForm] = useState({
     nominator_name: '',
@@ -75,7 +77,6 @@ export default function SubmissionForm() {
         setExistingSubmission(data[0]);
         setSubmissionCount(data[0].submission_count || 1);
         setIsLocked(data[0].is_locked || false);
-        // Pre-fill form
         setForm({
           nominator_name: data[0].nominator_name,
           nominator_email: data[0].nominator_email,
@@ -91,6 +92,12 @@ export default function SubmissionForm() {
           communication_preference: data[0].communication_preference || 'Email',
         });
         setSelectedCategories(data[0].award_categories || []);
+        // Check payment status
+        const { data: paymentData } = await supabase.from('payments').select('payment_status').eq('submission_id', data[0].id).order('created_at', { ascending: false }).limit(1);
+        if (paymentData?.[0]?.payment_status === 'completed' || paymentData?.[0]?.payment_status === 'waived') {
+          setPaymentStatus(paymentData[0].payment_status as any);
+        }
+        if (data[0].status === 'paid') setPaymentStatus('completed');
       }
     };
     fetchExisting();
@@ -195,12 +202,78 @@ export default function SubmissionForm() {
 
     setUploadingDocs(false);
     toast({ title: 'Documents uploaded successfully!' });
-    setStep('review');
+    setStep('payment');
   };
+
+  const handlePayment = async () => {
+    if (!existingSubmission || !user) return;
+    setProcessingPayment(true);
+    
+    const callbackUrl = `${window.location.origin}/submissions/new?payment=verify`;
+    
+    const { data, error } = await supabase.functions.invoke('initialize-payment', {
+      body: {
+        submissionId: existingSubmission.id,
+        email: form.nominator_email || user.email,
+        amount: 100, // KES 1 = 100 kobo
+        callbackUrl,
+      },
+    });
+
+    setProcessingPayment(false);
+
+    if (error || !data?.authorization_url) {
+      toast({ title: 'Payment initialization failed', description: 'Please try again or contact support.', variant: 'destructive' });
+      return;
+    }
+
+    // Redirect to Paystack
+    window.location.href = data.authorization_url;
+  };
+
+  // Check for payment callback
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const reference = params.get('reference');
+    if (reference && params.get('payment') === 'verify') {
+      const verifyPayment = async () => {
+        const { data } = await supabase.functions.invoke('verify-payment', {
+          body: { reference },
+        });
+        if (data?.success) {
+          setPaymentStatus('completed');
+          setStep('review');
+          toast({ title: '✅ Payment confirmed!', description: 'You can now submit your application.' });
+        } else {
+          toast({ title: 'Payment verification failed', variant: 'destructive' });
+          setStep('payment');
+        }
+        // Clean URL
+        window.history.replaceState({}, '', window.location.pathname);
+      };
+      verifyPayment();
+    }
+  }, []);
 
   const handleFinalSubmit = async () => {
     if (!existingSubmission) return;
+    if (paymentStatus !== 'completed' && paymentStatus !== 'waived') {
+      toast({ title: 'Payment required', description: 'Please complete payment before submitting.', variant: 'destructive' });
+      setStep('payment');
+      return;
+    }
     await supabase.from('submissions').update({ status: 'submitted' }).eq('id', existingSubmission.id);
+    
+    // Send confirmation notification
+    try {
+      await supabase.from('notifications').insert({
+        user_id: user!.id,
+        title: 'Application Submitted',
+        message: `Your TEGA Awards application for ${form.school_name} has been successfully submitted and is now in the screening queue.`,
+        type: 'success',
+      });
+    } catch {} // Don't block on notification failure
+
     toast({ title: 'Application submitted successfully!' });
     navigate('/submissions');
   };
@@ -226,8 +299,8 @@ export default function SubmissionForm() {
 
         {/* Step indicators */}
         <div className="mb-8 flex gap-2">
-          {['section_a', 'section_b', 'review'].map((s, i) => (
-            <div key={s} className={`flex-1 h-2 rounded-full ${step === s ? 'bg-primary' : i < ['section_a', 'section_b', 'review'].indexOf(step) ? 'bg-success' : 'bg-secondary'}`} />
+          {['section_a', 'section_b', 'payment', 'review'].map((s, i) => (
+            <div key={s} className={`flex-1 h-2 rounded-full ${step === s ? 'bg-primary' : i < ['section_a', 'section_b', 'payment', 'review'].indexOf(step) ? 'bg-success' : 'bg-secondary'}`} />
           ))}
         </div>
 
@@ -390,6 +463,57 @@ export default function SubmissionForm() {
           </div>
         )}
 
+        {step === 'payment' && existingSubmission && (
+          <div className="space-y-6">
+            <Card className="glass-card">
+              <CardHeader>
+                <CardTitle className="font-display">Payment — KES 1</CardTitle>
+                <p className="text-sm text-muted-foreground">A nominal fee of KES 1 is required to finalize your application.</p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {paymentStatus === 'completed' || paymentStatus === 'waived' ? (
+                  <div className="rounded-lg bg-success/10 p-4 text-center">
+                    <p className="text-success font-semibold text-lg">✅ Payment {paymentStatus === 'waived' ? 'Waived' : 'Confirmed'}</p>
+                    <p className="text-muted-foreground text-sm mt-1">You can now proceed to review and submit.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="rounded-lg bg-secondary p-4">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Application Fee</span>
+                        <span className="font-semibold">KES 1.00</span>
+                      </div>
+                      <div className="flex justify-between text-sm mt-2">
+                        <span className="text-muted-foreground">Payment Methods</span>
+                        <span>M-Pesa · Card · Bank Transfer</span>
+                      </div>
+                    </div>
+                    <Button 
+                      className="w-full bg-gradient-gold font-semibold py-6 text-lg" 
+                      onClick={handlePayment}
+                      disabled={processingPayment}
+                    >
+                      {processingPayment ? 'Connecting to Paystack...' : 'Pay KES 1 via Paystack'}
+                    </Button>
+                    <p className="text-xs text-muted-foreground text-center">Secure payment powered by Paystack. Supports M-Pesa, Visa, Mastercard.</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <div className="flex gap-4">
+              <Button variant="outline" className="flex-1 border-border" onClick={() => setStep('section_b')}>
+                Back to Section B
+              </Button>
+              {(paymentStatus === 'completed' || paymentStatus === 'waived') && (
+                <Button className="flex-1 bg-gradient-gold font-semibold" onClick={() => setStep('review')}>
+                  Continue to Review
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
+
         {step === 'review' && existingSubmission && (
           <div className="space-y-6">
             <Card className="glass-card">
@@ -420,8 +544,8 @@ export default function SubmissionForm() {
             </Card>
 
             <div className="flex gap-4">
-              <Button variant="outline" className="flex-1 border-border" onClick={() => setStep('section_b')}>
-                Back to Section B
+              <Button variant="outline" className="flex-1 border-border" onClick={() => setStep('payment')}>
+                Back to Payment
               </Button>
               <Button className="flex-1 bg-gradient-gold font-semibold text-lg py-6" onClick={handleFinalSubmit}>
                 Submit Application

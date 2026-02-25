@@ -103,9 +103,10 @@ export default function SecretariatUsers() {
                   </TableCell>
                   <TableCell>
                     {u.credentials_path ? (
-                      <a href={supabase.storage.from('documents').getPublicUrl(u.credentials_path).data.publicUrl} target="_blank" rel="noopener noreferrer">
-                        <Button variant="ghost" size="sm" className="text-xs">View</Button>
-                      </a>
+                      <Button variant="ghost" size="sm" className="text-xs" onClick={async () => {
+                        const { data } = await supabase.storage.from('documents').createSignedUrl(u.credentials_path, 3600);
+                        if (data?.signedUrl) window.open(data.signedUrl, '_blank');
+                      }}>View</Button>
                     ) : <span className="text-xs text-muted-foreground">None</span>}
                   </TableCell>
                   <TableCell className="text-muted-foreground text-xs">{new Date(u.created_at).toLocaleDateString()}</TableCell>

@@ -46,9 +46,16 @@ export default function SubmitterSubmissions() {
     setViewingDocs(data || []);
   };
 
-  const getDocUrl = (filePath: string) => {
-    const { data } = supabase.storage.from('documents').getPublicUrl(filePath);
-    return data.publicUrl;
+  const [docUrls, setDocUrls] = useState<Record<string, string>>({});
+
+  const getSignedUrl = async (filePath: string) => {
+    if (docUrls[filePath]) return docUrls[filePath];
+    const { data, error } = await supabase.storage.from('documents').createSignedUrl(filePath, 3600);
+    if (data?.signedUrl) {
+      setDocUrls(prev => ({ ...prev, [filePath]: data.signedUrl }));
+      return data.signedUrl;
+    }
+    return '#';
   };
 
   return (
@@ -121,7 +128,12 @@ export default function SubmitterSubmissions() {
             </DialogHeader>
             <div className="space-y-3 max-h-[60vh] overflow-y-auto">
               {viewingDocs?.length === 0 && <p className="text-muted-foreground text-sm">No documents uploaded.</p>}
-              {viewingDocs?.map(doc => (
+              {viewingDocs?.map(doc => {
+                // Eagerly fetch signed URL
+                if (!docUrls[doc.file_path]) {
+                  getSignedUrl(doc.file_path);
+                }
+                return (
                 <div key={doc.id} className="flex items-center justify-between bg-secondary rounded-lg p-3">
                   <div className="flex items-center gap-2">
                     <FileText className="h-4 w-4 text-primary" />
@@ -130,11 +142,16 @@ export default function SubmitterSubmissions() {
                       <p className="text-xs text-muted-foreground">{doc.category}</p>
                     </div>
                   </div>
-                  <a href={getDocUrl(doc.file_path)} target="_blank" rel="noopener noreferrer">
-                    <Button variant="ghost" size="sm">View</Button>
-                  </a>
+                  {docUrls[doc.file_path] ? (
+                    <a href={docUrls[doc.file_path]} target="_blank" rel="noopener noreferrer">
+                      <Button variant="ghost" size="sm">View</Button>
+                    </a>
+                  ) : (
+                    <Button variant="ghost" size="sm" disabled>Loading...</Button>
+                  )}
                 </div>
-              ))}
+                );
+              })}
             </div>
           </DialogContent>
         </Dialog>

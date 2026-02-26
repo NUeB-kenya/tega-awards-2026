@@ -96,8 +96,12 @@ export default function SecretariatUsers() {
                       <SelectContent>
                         <SelectItem value="submitter">Applicant</SelectItem>
                         <SelectItem value="judge">Judge</SelectItem>
-                        <SelectItem value="admin">Admin</SelectItem>
+                        <SelectItem value="country_coordinator">Country Coordinator</SelectItem>
+                        <SelectItem value="panel_chair">Panel Chair</SelectItem>
+                        <SelectItem value="global_jury">Global Jury</SelectItem>
                         <SelectItem value="secretariat">Secretariat</SelectItem>
+                        <SelectItem value="admin">Admin</SelectItem>
+                        <SelectItem value="super_admin">Super Admin</SelectItem>
                       </SelectContent>
                     </Select>
                   </TableCell>

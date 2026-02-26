@@ -164,6 +164,13 @@ export default function Auth() {
         </Card>
       </div>
 
+      {/* Terms and conditions */}
+      <p className="absolute bottom-12 left-1/2 -translate-x-1/2 text-xs text-muted-foreground text-center max-w-sm">
+        By signing in or creating an account, you agree to the TEGA Awards{' '}
+        <span className="underline cursor-pointer text-primary">Terms and Conditions</span> and{' '}
+        <span className="underline cursor-pointer text-primary">Privacy Policy</span>.
+      </p>
+
       {/* Hidden 5-tap trigger for admin login */}
       <div
         className="absolute bottom-4 right-4 opacity-10 cursor-default select-none"

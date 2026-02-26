@@ -109,6 +109,41 @@ export type Database = {
           },
         ]
       }
+      countries: {
+        Row: {
+          created_at: string
+          flag_emoji: string | null
+          id: string
+          name: string
+          phone_code: string | null
+          region_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          flag_emoji?: string | null
+          id: string
+          name: string
+          phone_code?: string | null
+          region_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          flag_emoji?: string | null
+          id?: string
+          name?: string
+          phone_code?: string | null
+          region_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "countries_region_id_fkey"
+            columns: ["region_id"]
+            isOneToOne: false
+            referencedRelation: "regions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       evidence_files: {
         Row: {
           file_type: string
@@ -249,6 +284,7 @@ export type Database = {
           created_at: string
           id: string
           level: string
+          name: string | null
           region_id: string | null
         }
         Insert: {
@@ -258,6 +294,7 @@ export type Database = {
           created_at?: string
           id?: string
           level: string
+          name?: string | null
           region_id?: string | null
         }
         Update: {
@@ -267,6 +304,7 @@ export type Database = {
           created_at?: string
           id?: string
           level?: string
+          name?: string | null
           region_id?: string | null
         }
         Relationships: [
@@ -365,6 +403,24 @@ export type Database = {
           position?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      regions: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
         }
         Relationships: []
       }
@@ -487,6 +543,7 @@ export type Database = {
           award_categories: string[] | null
           category_id: number | null
           communication_preference: string | null
+          country_id: string | null
           created_at: string
           id: string
           institution_size: string | null
@@ -497,11 +554,16 @@ export type Database = {
           nominator_name: string
           nominator_phone: string | null
           nominator_role: string | null
+          parent_submission_id: string | null
           past_awards: string | null
+          promoted_from_stage: string | null
           region: string | null
           school_city: string
           school_country: string
           school_name: string
+          screened_at: string | null
+          screened_by: string | null
+          screening_notes: string | null
           stage: string
           status: string
           submission_count: number
@@ -514,6 +576,7 @@ export type Database = {
           award_categories?: string[] | null
           category_id?: number | null
           communication_preference?: string | null
+          country_id?: string | null
           created_at?: string
           id?: string
           institution_size?: string | null
@@ -524,11 +587,16 @@ export type Database = {
           nominator_name: string
           nominator_phone?: string | null
           nominator_role?: string | null
+          parent_submission_id?: string | null
           past_awards?: string | null
+          promoted_from_stage?: string | null
           region?: string | null
           school_city: string
           school_country: string
           school_name: string
+          screened_at?: string | null
+          screened_by?: string | null
+          screening_notes?: string | null
           stage?: string
           status?: string
           submission_count?: number
@@ -541,6 +609,7 @@ export type Database = {
           award_categories?: string[] | null
           category_id?: number | null
           communication_preference?: string | null
+          country_id?: string | null
           created_at?: string
           id?: string
           institution_size?: string | null
@@ -551,11 +620,16 @@ export type Database = {
           nominator_name?: string
           nominator_phone?: string | null
           nominator_role?: string | null
+          parent_submission_id?: string | null
           past_awards?: string | null
+          promoted_from_stage?: string | null
           region?: string | null
           school_city?: string
           school_country?: string
           school_name?: string
+          screened_at?: string | null
+          screened_by?: string | null
+          screening_notes?: string | null
           stage?: string
           status?: string
           submission_count?: number
@@ -568,6 +642,13 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "submissions_parent_submission_id_fkey"
+            columns: ["parent_submission_id"]
+            isOneToOne: false
+            referencedRelation: "submissions"
             referencedColumns: ["id"]
           },
         ]
@@ -609,6 +690,16 @@ export type Database = {
       is_judge: { Args: never; Returns: boolean }
       is_secretariat: { Args: never; Returns: boolean }
       is_submitter: { Args: never; Returns: boolean }
+      log_audit: {
+        Args: {
+          _action_type: string
+          _entity_id?: string
+          _entity_type: string
+          _metadata?: Json
+          _user_id: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role:

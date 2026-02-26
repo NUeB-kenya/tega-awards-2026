@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import tegaLogo from '@/assets/tega-logo.png';
 import NotificationBell from '@/components/NotificationBell';
-import { LogOut, LayoutDashboard, FileText, Users, Award, Settings, Shield, CheckSquare } from 'lucide-react';
+import { LogOut, LayoutDashboard, FileText, Users, Award, Settings, Shield, CheckSquare, GitBranch, Layers } from 'lucide-react';
 
 const navItems: Record<AppRole, { label: string; href: string; icon: React.ElementType }[]> = {
   submitter: [
@@ -18,7 +18,10 @@ const navItems: Record<AppRole, { label: string; href: string; icon: React.Eleme
   ],
   secretariat: [
     { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+    { label: 'Screening Queue', href: '/secretariat/screening', icon: Shield },
     { label: 'All Submissions', href: '/secretariat/submissions', icon: FileText },
+    { label: 'Panels', href: '/secretariat/panels', icon: Layers },
+    { label: 'Routing Engine', href: '/secretariat/routing', icon: GitBranch },
     { label: 'Judges', href: '/secretariat/judges', icon: Users },
     { label: 'Scores', href: '/secretariat/scores', icon: Award },
     { label: 'Manage Users', href: '/secretariat/users', icon: Settings },

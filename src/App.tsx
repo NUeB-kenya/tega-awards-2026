@@ -11,6 +11,9 @@ import SubmitterSubmissions from "./pages/SubmitterSubmissions";
 import JudgeSubmissions from "./pages/JudgeSubmissions";
 import JudgeScores from "./pages/JudgeScores";
 import SecretariatSubmissions from "./pages/SecretariatSubmissions";
+import SecretariatScreening from "./pages/SecretariatScreening";
+import SecretariatPanels from "./pages/SecretariatPanels";
+import SecretariatRouting from "./pages/SecretariatRouting";
 import SecretariatJudges from "./pages/SecretariatJudges";
 import SecretariatScores from "./pages/SecretariatScores";
 import SecretariatUsers from "./pages/SecretariatUsers";
@@ -37,6 +40,9 @@ const App = () => (
           <Route path="/judge/submissions" element={<ProtectedRoute allowedRoles={['judge']}><JudgeSubmissions /></ProtectedRoute>} />
           <Route path="/judge/scores" element={<ProtectedRoute allowedRoles={['judge']}><JudgeScores /></ProtectedRoute>} />
           <Route path="/secretariat/submissions" element={<ProtectedRoute allowedRoles={['secretariat']}><SecretariatSubmissions /></ProtectedRoute>} />
+          <Route path="/secretariat/screening" element={<ProtectedRoute allowedRoles={['secretariat']}><SecretariatScreening /></ProtectedRoute>} />
+          <Route path="/secretariat/panels" element={<ProtectedRoute allowedRoles={['secretariat']}><SecretariatPanels /></ProtectedRoute>} />
+          <Route path="/secretariat/routing" element={<ProtectedRoute allowedRoles={['secretariat']}><SecretariatRouting /></ProtectedRoute>} />
           <Route path="/secretariat/judges" element={<ProtectedRoute allowedRoles={['secretariat']}><SecretariatJudges /></ProtectedRoute>} />
           <Route path="/secretariat/scores" element={<ProtectedRoute allowedRoles={['secretariat']}><SecretariatScores /></ProtectedRoute>} />
           <Route path="/secretariat/users" element={<ProtectedRoute allowedRoles={['secretariat']}><SecretariatUsers /></ProtectedRoute>} />

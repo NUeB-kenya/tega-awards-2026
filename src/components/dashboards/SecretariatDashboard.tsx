@@ -2,36 +2,54 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { FileText, Users, Star, Shield } from 'lucide-react';
+import { FileText, Users, Star, Shield, GitBranch, Layers, CheckCircle, Clock } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export default function SecretariatDashboard() {
   const { profile } = useAuth();
-  const [stats, setStats] = useState({ submissions: 0, judges: 0, scores: 0, submitters: 0 });
+  const [stats, setStats] = useState({
+    submissions: 0, judges: 0, scores: 0, submitters: 0,
+    screening: 0, screened: 0, assigned: 0, panels: 0,
+    national: 0, regional: 0, global: 0,
+  });
 
   useEffect(() => {
     const fetchStats = async () => {
-      const [subs, roles, scores] = await Promise.all([
-        supabase.from('submissions').select('id', { count: 'exact', head: true }),
+      const [subs, roles, scores, panelsRes] = await Promise.all([
+        supabase.from('submissions').select('id, status, stage'),
         supabase.from('user_roles').select('role'),
         supabase.from('scores').select('id', { count: 'exact', head: true }),
+        supabase.from('panels').select('id', { count: 'exact', head: true }),
       ]);
+      const allSubs = subs.data || [];
       const judgeCount = roles.data?.filter(r => r.role === 'judge').length || 0;
       const submitterCount = roles.data?.filter(r => r.role === 'submitter').length || 0;
       setStats({
-        submissions: subs.count || 0,
+        submissions: allSubs.length,
         judges: judgeCount,
         scores: scores.count || 0,
         submitters: submitterCount,
+        screening: allSubs.filter(s => s.status === 'submitted' || s.status === 'paid').length,
+        screened: allSubs.filter(s => s.status === 'screened').length,
+        assigned: allSubs.filter(s => s.status === 'assigned').length,
+        panels: panelsRes.count || 0,
+        national: allSubs.filter(s => (s.stage || 'national') === 'national').length,
+        regional: allSubs.filter(s => s.stage === 'regional').length,
+        global: allSubs.filter(s => s.stage === 'global').length,
       });
     };
     fetchStats();
   }, []);
 
   const statCards = [
-    { label: 'Total Submissions', value: stats.submissions, icon: FileText, color: 'text-primary' },
-    { label: 'Active Judges', value: stats.judges, icon: Users, color: 'text-success' },
-    { label: 'Scores Given', value: stats.scores, icon: Star, color: 'text-warning' },
-    { label: 'Submitters', value: stats.submitters, icon: Shield, color: 'text-accent' },
+    { label: 'Total Submissions', value: stats.submissions, icon: FileText, color: 'text-primary', href: '/secretariat/submissions' },
+    { label: 'Screening Queue', value: stats.screening, icon: Shield, color: 'text-warning', href: '/secretariat/screening' },
+    { label: 'Screened (Ready)', value: stats.screened, icon: CheckCircle, color: 'text-success', href: '/secretariat/screening' },
+    { label: 'Assigned to Panels', value: stats.assigned, icon: Layers, color: 'text-accent', href: '/secretariat/panels' },
+    { label: 'Active Judges', value: stats.judges, icon: Users, color: 'text-success', href: '/secretariat/judges' },
+    { label: 'Scores Given', value: stats.scores, icon: Star, color: 'text-warning', href: '/secretariat/scores' },
+    { label: 'Panels', value: stats.panels, icon: Layers, color: 'text-primary', href: '/secretariat/panels' },
+    { label: 'Applicants', value: stats.submitters, icon: FileText, color: 'text-muted-foreground', href: '/secretariat/users' },
   ];
 
   return (
@@ -45,22 +63,52 @@ export default function SecretariatDashboard() {
         </p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {statCards.map((stat) => {
           const Icon = stat.icon;
           return (
-            <Card key={stat.label} className="glass-card">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">{stat.label}</CardTitle>
-                <Icon className={`h-5 w-5 ${stat.color}`} />
-              </CardHeader>
-              <CardContent>
-                <p className="text-3xl font-bold">{stat.value}</p>
-              </CardContent>
-            </Card>
+            <Link key={stat.label} to={stat.href}>
+              <Card className="glass-card hover:border-primary/30 transition-colors cursor-pointer">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">{stat.label}</CardTitle>
+                  <Icon className={`h-5 w-5 ${stat.color}`} />
+                </CardHeader>
+                <CardContent>
+                  <p className="text-3xl font-bold">{stat.value}</p>
+                </CardContent>
+              </Card>
+            </Link>
           );
         })}
       </div>
+
+      {/* Routing overview */}
+      <Card className="glass-card">
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <GitBranch className="h-5 w-5 text-primary" />
+            <CardTitle className="font-display text-lg">3-Tier Pipeline</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-4">
+            <div className="flex-1 bg-primary/10 rounded-lg p-4 text-center">
+              <p className="text-2xl font-bold text-primary">{stats.national}</p>
+              <p className="text-xs text-muted-foreground">National</p>
+            </div>
+            <div className="text-muted-foreground">→</div>
+            <div className="flex-1 bg-warning/10 rounded-lg p-4 text-center">
+              <p className="text-2xl font-bold text-warning">{stats.regional}</p>
+              <p className="text-xs text-muted-foreground">Regional</p>
+            </div>
+            <div className="text-muted-foreground">→</div>
+            <div className="flex-1 bg-success/10 rounded-lg p-4 text-center">
+              <p className="text-2xl font-bold text-success">{stats.global}</p>
+              <p className="text-xs text-muted-foreground">Global</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

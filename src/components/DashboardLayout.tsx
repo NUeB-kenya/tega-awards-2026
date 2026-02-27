@@ -8,10 +8,20 @@ import { LogOut, LayoutDashboard, FileText, Users, Award, Settings, Shield, Chec
 const navItems: Record<AppRole, { label: string; href: string; icon: React.ElementType }[]> = {
   submitter: [
     { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { label: 'My Submissions', href: '/submissions', icon: FileText },
-    { label: 'New Submission', href: '/submissions/new', icon: Award },
+    { label: 'My Applications', href: '/submissions', icon: FileText },
+    { label: 'New Application', href: '/submissions/new', icon: Award },
   ],
   judge: [
+    { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+    { label: 'Submissions', href: '/judge/submissions', icon: FileText },
+    { label: 'My Scores', href: '/judge/scores', icon: Award },
+  ],
+  panel_chair: [
+    { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+    { label: 'Submissions', href: '/judge/submissions', icon: FileText },
+    { label: 'My Scores', href: '/judge/scores', icon: Award },
+  ],
+  global_jury: [
     { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { label: 'Submissions', href: '/judge/submissions', icon: FileText },
     { label: 'My Scores', href: '/judge/scores', icon: Award },
@@ -27,11 +37,24 @@ const navItems: Record<AppRole, { label: string; href: string; icon: React.Eleme
     { label: 'Manage Users', href: '/secretariat/users', icon: Settings },
     { label: 'Statistics', href: '/secretariat/statistics', icon: CheckSquare },
   ],
+  country_coordinator: [
+    { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+    { label: 'Screening Queue', href: '/secretariat/screening', icon: Shield },
+    { label: 'All Submissions', href: '/secretariat/submissions', icon: FileText },
+    { label: 'Panels', href: '/secretariat/panels', icon: Layers },
+  ],
   admin: [
     { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { label: 'Approvals', href: '/admin/approvals', icon: Shield },
     { label: 'All Submissions', href: '/admin/submissions', icon: FileText },
     { label: 'Messaging', href: '/admin/messaging', icon: Users },
+  ],
+  super_admin: [
+    { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+    { label: 'Approvals', href: '/admin/approvals', icon: Shield },
+    { label: 'All Submissions', href: '/admin/submissions', icon: FileText },
+    { label: 'Messaging', href: '/admin/messaging', icon: Users },
+    { label: 'Manage Users', href: '/secretariat/users', icon: Settings },
   ],
 };
 
@@ -46,14 +69,30 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     navigate('/auth');
   };
 
-  const roleLabel = role === 'secretariat' ? 'Secretariat' : role === 'judge' ? 'Judge' : role === 'admin' ? 'Admin' : 'Applicant';
-  const roleBadgeColor = role === 'secretariat' ? 'bg-destructive/20 text-destructive' : role === 'judge' ? 'bg-primary/20 text-primary' : role === 'admin' ? 'bg-accent/20 text-accent' : 'bg-success/20 text-success';
+  const roleLabelMap: Record<AppRole, string> = {
+    submitter: 'Applicant',
+    judge: 'Judge',
+    panel_chair: 'Panel Chair',
+    global_jury: 'Global Jury',
+    country_coordinator: 'Country Coordinator',
+    secretariat: 'Secretariat',
+    admin: 'Admin',
+    super_admin: 'Super Admin',
+  };
+  const roleLabel = role ? roleLabelMap[role] : 'Applicant';
+  const roleBadgeColor = role === 'secretariat' || role === 'country_coordinator'
+    ? 'bg-destructive/20 text-destructive'
+    : role === 'judge' || role === 'panel_chair' || role === 'global_jury'
+    ? 'bg-primary/20 text-primary'
+    : role === 'admin' || role === 'super_admin'
+    ? 'bg-accent/20 text-accent'
+    : 'bg-success/20 text-success';
 
   return (
     <div className="flex min-h-screen bg-background">
       <aside className="fixed left-0 top-0 z-40 h-screen w-64 border-r border-border bg-sidebar flex flex-col">
         <div className="flex items-center gap-3 border-b border-border p-5">
-          <img src={tegaLogo} alt="TEGA" className="h-10 w-10" />
+          <img src={tegaLogo} alt="TEGA" className="h-12 w-auto max-w-[140px] object-contain" />
           <div>
             <h2 className="font-display text-lg font-bold text-foreground">TEGA</h2>
             <p className="text-xs text-muted-foreground">Awards Portal</p>

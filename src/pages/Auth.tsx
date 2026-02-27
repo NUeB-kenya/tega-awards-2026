@@ -73,10 +73,10 @@ export default function Auth() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-dark p-4 relative">
+    <div className="relative flex min-h-screen items-center justify-center bg-gradient-dark p-4 pb-24">
       <div className="w-full max-w-md animate-fade-in">
         <div className="mb-8 flex flex-col items-center gap-3">
-          <img src={tegaLogo} alt="TEGA" className="h-20 w-20" />
+          <img src={tegaLogo} alt="TEGA" className="h-24 w-auto max-w-[240px] object-contain" />
           <h1 className="font-display text-3xl font-bold">
             <span className="text-foreground">TEGA </span>
             <span className="text-gradient-gold">Portal</span>
@@ -164,11 +164,10 @@ export default function Auth() {
         </Card>
       </div>
 
-      {/* Terms and conditions */}
-      <p className="absolute bottom-12 left-1/2 -translate-x-1/2 text-xs text-muted-foreground text-center max-w-sm">
-        By signing in or creating an account, you agree to the TEGA Awards{' '}
-        <span className="underline cursor-pointer text-primary">Terms and Conditions</span> and{' '}
-        <span className="underline cursor-pointer text-primary">Privacy Policy</span>.
+      <p className="mt-4 max-w-sm px-4 text-center text-xs text-muted-foreground">
+        Terms and conditions apply. By signing in or creating an account, you agree to the TEGA Awards{' '}
+        <span className="cursor-pointer underline text-primary">Terms and Conditions</span> and{' '}
+        <span className="cursor-pointer underline text-primary">Privacy Policy</span>.
       </p>
 
       {/* Hidden 5-tap trigger for admin login */}
@@ -176,7 +175,7 @@ export default function Auth() {
         className="absolute bottom-4 right-4 opacity-10 cursor-default select-none"
         onClick={handleSecretTap}
       >
-        <img src={tegaLogo} alt="" className="h-8 w-8" />
+        <img src={tegaLogo} alt="" className="h-8 w-auto max-w-[80px] object-contain" />
       </div>
     </div>
   );

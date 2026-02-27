@@ -36,21 +36,20 @@ export default function JudgeSubmissions() {
 
   const judgeCountry = profile?.country || '';
 
+  const canScoreSubmission = (sub: any) => {
+    if (!judgeCountry) return false;
+    return sub.school_country?.toLowerCase() === judgeCountry.toLowerCase();
+  };
+
   useEffect(() => {
     if (!user) return;
     const fetchData = async () => {
-      // Get submissions from judge's country
+      // Judges can view all screened/submitted applications; scoring remains country-restricted
       const { data: subs } = await supabase
         .from('submissions')
         .select('*')
-        .eq('status', 'submitted')
+        .in('status', ['submitted', 'paid', 'screened', 'assigned'])
         .order('created_at', { ascending: false });
-      
-      const filtered = (subs || []).filter(s => 
-        s.school_country?.toLowerCase() === judgeCountry?.toLowerCase() || !judgeCountry
-      );
-
-      // Get all assignments
       const { data: allAssignments } = await supabase.from('judge_assignments').select('*');
       const assignMap: Record<string, any> = {};
       allAssignments?.forEach(a => { assignMap[a.submission_id] = a; });
@@ -60,7 +59,7 @@ export default function JudgeSubmissions() {
       const scoreMap: Record<string, any> = {};
       myScores?.forEach(s => { scoreMap[s.submission_id] = s; });
 
-      setSubmissions(filtered);
+      setSubmissions(subs || []);
       setAssignments(assignMap);
       setScores(scoreMap);
       setLoading(false);
@@ -70,6 +69,11 @@ export default function JudgeSubmissions() {
 
   const pickSubmission = async (subId: string) => {
     if (!user) return;
+    const targetSub = submissions.find(s => s.id === subId);
+    if (!targetSub || !canScoreSubmission(targetSub)) {
+      toast({ title: 'Scoring restricted', description: 'You can only score applications from your country.', variant: 'destructive' });
+      return;
+    }
     const existing = assignments[subId];
     if (existing && existing.judge_id !== user.id) {
       toast({ title: 'Already assigned', description: 'Another judge is verifying this submission.', variant: 'destructive' });
@@ -93,6 +97,11 @@ export default function JudgeSubmissions() {
   };
 
   const openScoring = (subId: string) => {
+    const targetSub = submissions.find(s => s.id === subId);
+    if (!targetSub || !canScoreSubmission(targetSub)) {
+      toast({ title: 'Scoring restricted', description: 'You can only score applications from your country.', variant: 'destructive' });
+      return;
+    }
     const existing = scores[subId];
     setScoreForm({
       impact: existing?.impact_score ?? 5,
@@ -113,6 +122,11 @@ export default function JudgeSubmissions() {
 
   const handleScore = async () => {
     if (!user || !scoringId) return;
+    const targetSub = submissions.find(s => s.id === scoringId);
+    if (!targetSub || !canScoreSubmission(targetSub)) {
+      toast({ title: 'Scoring restricted', description: 'You can only score applications from your country.', variant: 'destructive' });
+      return;
+    }
     const existing = scores[scoringId];
     
     // Weighted scoring: Impact(30%) + Innovation(15%) + Scalability(15%) + Equity(10%) + Sustainability(10%) + Evidence(10%) + Ethics(10%)
@@ -188,21 +202,22 @@ export default function JudgeSubmissions() {
           Verify <span className="text-gradient-gold">Applications</span>
         </h1>
         <p className="mb-8 text-muted-foreground">
-          Applications from {judgeCountry || 'your region'} · Pick one at a time to verify
+          You can view all applications. Scoring is restricted to {judgeCountry || 'your assigned country'} submissions only.
         </p>
 
         {loading ? (
           <p className="text-muted-foreground">Loading...</p>
         ) : submissions.length === 0 ? (
-          <Card className="glass-card py-12 text-center">
-            <p className="text-muted-foreground">No applications from your region yet.</p>
-          </Card>
+            <Card className="glass-card py-12 text-center">
+              <p className="text-muted-foreground">No applications available yet.</p>
+            </Card>
         ) : (
           <div className="space-y-4">
             {submissions.map((sub) => {
               const assignment = assignments[sub.id];
               const isAssignedToOther = assignment && assignment.judge_id !== user?.id;
               const isAssignedToMe = assignment && assignment.judge_id === user?.id;
+              const isEligibleForScoring = canScoreSubmission(sub);
               const scored = !!scores[sub.id];
 
               return (
@@ -218,6 +233,11 @@ export default function JudgeSubmissions() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
+                      {!isEligibleForScoring && (
+                        <Badge className="bg-warning/20 text-warning border-0">
+                          View only (outside your country)
+                        </Badge>
+                      )}
                       {isAssignedToOther && (
                         <Badge className="bg-warning/20 text-warning border-0 gap-1">
                           <Lock className="h-3 w-3" /> Verification ongoing
@@ -234,17 +254,17 @@ export default function JudgeSubmissions() {
                       <Button variant="outline" size="sm" className="gap-1" onClick={() => viewDocuments(sub.id)}>
                         <FileText className="h-3.5 w-3.5" /> Docs
                       </Button>
-                      {!isAssignedToOther && !scored && !isAssignedToMe && (
+                      {isEligibleForScoring && !isAssignedToOther && !scored && !isAssignedToMe && (
                         <Button size="sm" className="bg-gradient-gold gap-1" onClick={() => pickSubmission(sub.id)}>
                           Pick
                         </Button>
                       )}
-                      {isAssignedToMe && !scored && (
+                      {isEligibleForScoring && isAssignedToMe && !scored && (
                         <Button size="sm" className="bg-gradient-gold gap-1" onClick={() => openScoring(sub.id)}>
                           <Star className="h-3.5 w-3.5" /> Score
                         </Button>
                       )}
-                      {scored && (
+                      {isEligibleForScoring && scored && (
                         <Button size="sm" variant="outline" className="gap-1" onClick={() => openScoring(sub.id)}>
                           Re-score
                         </Button>

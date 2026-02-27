@@ -10,10 +10,10 @@ export default function Dashboard() {
 
   return (
     <DashboardLayout>
-      {role === 'submitter' && <SubmitterDashboard />}
-      {role === 'judge' && <JudgeDashboard />}
-      {role === 'secretariat' && <SecretariatDashboard />}
-      {role === 'admin' && <AdminDashboard />}
+      {(role === 'submitter') && <SubmitterDashboard />}
+      {(role === 'judge' || role === 'panel_chair' || role === 'global_jury') && <JudgeDashboard />}
+      {(role === 'secretariat' || role === 'country_coordinator') && <SecretariatDashboard />}
+      {(role === 'admin' || role === 'super_admin') && <AdminDashboard />}
       {!role && (
         <div className="flex items-center justify-center py-20">
           <p className="text-muted-foreground">Loading role information...</p>

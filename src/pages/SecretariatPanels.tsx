@@ -107,6 +107,13 @@ export default function SecretariatPanels() {
     return 'bg-success/20 text-success';
   };
 
+  const selectedPanelObj = showAddJudge ? panels.find(p => p.id === showAddJudge) : null;
+  const eligibleJudges = [...judges].sort((a, b) => {
+    if (a.country && !b.country) return -1;
+    if (!a.country && b.country) return 1;
+    return (a.full_name || '').localeCompare(b.full_name || '');
+  });
+
   return (
     <DashboardLayout>
       <div className="animate-fade-in">
@@ -228,7 +235,7 @@ export default function SecretariatPanels() {
                 <Select value={selectedJudge} onValueChange={setSelectedJudge}>
                   <SelectTrigger className="mt-1 bg-secondary"><SelectValue placeholder="Choose a judge" /></SelectTrigger>
                   <SelectContent>
-                    {judges.map(j => (
+                    {eligibleJudges.map(j => (
                       <SelectItem key={j.user_id} value={j.user_id}>{j.full_name} ({j.country || 'No country'})</SelectItem>
                     ))}
                   </SelectContent>

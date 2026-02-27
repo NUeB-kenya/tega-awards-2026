@@ -8,7 +8,7 @@ import { Link } from 'react-router-dom';
 export default function SecretariatDashboard() {
   const { profile } = useAuth();
   const [stats, setStats] = useState({
-    submissions: 0, judges: 0, scores: 0, submitters: 0,
+    submissions: 0, judges: 0, scores: 0, applicants: 0,
     screening: 0, screened: 0, assigned: 0, panels: 0,
     national: 0, regional: 0, global: 0,
   });
@@ -23,12 +23,12 @@ export default function SecretariatDashboard() {
       ]);
       const allSubs = subs.data || [];
       const judgeCount = roles.data?.filter(r => r.role === 'judge').length || 0;
-      const submitterCount = roles.data?.filter(r => r.role === 'submitter').length || 0;
+      const applicantCount = roles.data?.filter(r => r.role === 'submitter').length || 0;
       setStats({
         submissions: allSubs.length,
         judges: judgeCount,
         scores: scores.count || 0,
-        submitters: submitterCount,
+        applicants: applicantCount,
         screening: allSubs.filter(s => s.status === 'submitted' || s.status === 'paid').length,
         screened: allSubs.filter(s => s.status === 'screened').length,
         assigned: allSubs.filter(s => s.status === 'assigned').length,
@@ -49,7 +49,7 @@ export default function SecretariatDashboard() {
     { label: 'Active Judges', value: stats.judges, icon: Users, color: 'text-success', href: '/secretariat/judges' },
     { label: 'Scores Given', value: stats.scores, icon: Star, color: 'text-warning', href: '/secretariat/scores' },
     { label: 'Panels', value: stats.panels, icon: Layers, color: 'text-primary', href: '/secretariat/panels' },
-    { label: 'Applicants', value: stats.submitters, icon: FileText, color: 'text-muted-foreground', href: '/secretariat/users' },
+    { label: 'Applicants', value: stats.applicants, icon: FileText, color: 'text-muted-foreground', href: '/secretariat/users' },
   ];
 
   return (

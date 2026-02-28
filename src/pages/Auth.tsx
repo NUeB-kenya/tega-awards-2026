@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -73,7 +73,7 @@ export default function Auth() {
   };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-gradient-dark p-4 pb-24">
+    <div className="relative flex min-h-screen flex-col items-center justify-center bg-gradient-dark p-4">
       <div className="w-full max-w-md animate-fade-in">
         <div className="mb-8 flex flex-col items-center gap-3">
           <img src={tegaLogo} alt="TEGA" className="h-24 w-auto max-w-[240px] object-contain" />
@@ -162,13 +162,13 @@ export default function Auth() {
             </CardContent>
           </Tabs>
         </Card>
-      </div>
 
-      <p className="mt-4 max-w-sm px-4 text-center text-xs text-muted-foreground">
-        Terms and conditions apply. By signing in or creating an account, you agree to the TEGA Awards{' '}
-        <span className="cursor-pointer underline text-primary">Terms and Conditions</span> and{' '}
-        <span className="cursor-pointer underline text-primary">Privacy Policy</span>.
-      </p>
+        <p className="mt-6 max-w-sm px-4 text-center text-xs text-muted-foreground">
+          Terms and conditions apply. By signing in or creating an account, you agree to the TEGA Awards{' '}
+          <Link to="/terms" className="underline text-primary hover:text-primary/80">Terms and Conditions</Link> and{' '}
+          <Link to="/privacy" className="underline text-primary hover:text-primary/80">Privacy Policy</Link>.
+        </p>
+      </div>
 
       {/* Hidden 5-tap trigger for admin login */}
       <div

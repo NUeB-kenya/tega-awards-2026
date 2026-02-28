@@ -212,7 +212,7 @@ export default function SecretariatScreening() {
         <p className="mb-8 text-muted-foreground">Quality gate — review completeness, category correctness, evidence standards, and duplicates before sending to judges.</p>
 
         {/* Summary cards */}
-        <div className="grid grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           {[
             { label: 'Awaiting Screening', count: submissions.filter(s => s.status === 'submitted' || s.status === 'paid').length, color: 'text-warning' },
             { label: 'Screened (Ready)', count: submissions.filter(s => s.status === 'screened').length, color: 'text-success' },

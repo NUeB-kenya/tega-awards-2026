@@ -20,6 +20,10 @@ import SecretariatUsers from "./pages/SecretariatUsers";
 import SecretariatStatistics from "./pages/SecretariatStatistics";
 import AdminApprovals from "./pages/AdminApprovals";
 import AdminMessaging from "./pages/AdminMessaging";
+import AdminFinance from "./pages/AdminFinance";
+import NotificationsPage from "./pages/NotificationsPage";
+import TermsAndConditions from "./pages/TermsAndConditions";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 import ProtectedRoute from "./components/ProtectedRoute";
 import NotFound from "./pages/NotFound";
 
@@ -34,7 +38,10 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/terms" element={<TermsAndConditions />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
           <Route path="/submissions" element={<ProtectedRoute allowedRoles={['submitter']}><SubmitterSubmissions /></ProtectedRoute>} />
           <Route path="/submissions/new" element={<ProtectedRoute allowedRoles={['submitter']}><SubmissionForm /></ProtectedRoute>} />
           <Route path="/judge/submissions" element={<ProtectedRoute allowedRoles={['judge', 'panel_chair', 'global_jury']}><JudgeSubmissions /></ProtectedRoute>} />
@@ -50,6 +57,7 @@ const App = () => (
           <Route path="/admin/approvals" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><AdminApprovals /></ProtectedRoute>} />
           <Route path="/admin/submissions" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><SecretariatSubmissions /></ProtectedRoute>} />
           <Route path="/admin/messaging" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><AdminMessaging /></ProtectedRoute>} />
+          <Route path="/admin/finance" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><AdminFinance /></ProtectedRoute>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

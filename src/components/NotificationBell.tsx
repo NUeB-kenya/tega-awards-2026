@@ -51,7 +51,7 @@ export default function NotificationBell() {
                 onClick={() => handleClick(n)}
               >
                 <p className="font-medium">{n.title}</p>
-                <p className="text-muted-foreground text-xs mt-0.5 line-clamp-2">{n.message}</p>
+                <p className="text-muted-foreground text-xs mt-0.5 line-clamp-3 whitespace-pre-wrap">{n.message}</p>
                 <p className="text-muted-foreground text-[10px] mt-1">{new Date(n.created_at).toLocaleString()}</p>
               </div>
             ))

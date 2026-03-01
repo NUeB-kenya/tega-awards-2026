@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const PAYSTACK_SECRET_KEY = Deno.env.get('PAYSTACK_SECRET_KEY');
+    const PAYSTACK_SECRET_KEY = Deno.env.get('Paystack_SK');
     if (!PAYSTACK_SECRET_KEY) {
       return new Response(JSON.stringify({ error: 'Paystack not configured' }), {
         status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -26,6 +26,12 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
+    // Generate a system reference code: TEGA-YYYYMMDD-RANDOM
+    const now = new Date();
+    const datePart = now.toISOString().slice(0, 10).replace(/-/g, '');
+    const randomPart = crypto.randomUUID().slice(0, 8).toUpperCase();
+    const tegaRef = `TEGA-${datePart}-${randomPart}`;
+
     // Create payment record
     const { data: payment, error: paymentError } = await supabase
       .from('payments')
@@ -34,6 +40,7 @@ serve(async (req) => {
         amount: amount / 100, // Store in KES
         currency: 'KES',
         payment_status: 'pending',
+        transaction_reference: tegaRef,
       })
       .select()
       .single();
@@ -55,11 +62,12 @@ serve(async (req) => {
         email,
         amount, // in kobo
         currency: 'KES',
-        reference: payment.id,
+        reference: tegaRef,
         callback_url: callbackUrl,
         metadata: {
           submission_id: submissionId,
           payment_id: payment.id,
+          tega_reference: tegaRef,
         },
       }),
     });

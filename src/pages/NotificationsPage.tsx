@@ -59,7 +59,7 @@ export default function NotificationsPage() {
                       <Badge className={`${typeColors[n.type] || typeColors.info} border-0 text-[10px]`}>{n.type}</Badge>
                       {!n.is_read && <span className="h-2 w-2 rounded-full bg-primary" />}
                     </div>
-                    <p className="text-sm text-muted-foreground">{n.message}</p>
+                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">{n.message}</p>
                     <p className="text-[10px] text-muted-foreground mt-2">{new Date(n.created_at).toLocaleString()}</p>
                   </div>
                   {n.link && (

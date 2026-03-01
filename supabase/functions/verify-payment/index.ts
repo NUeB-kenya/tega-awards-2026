@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const PAYSTACK_SECRET_KEY = Deno.env.get('PAYSTACK_SECRET_KEY');
+    const PAYSTACK_SECRET_KEY = Deno.env.get('Paystack_SK');
     if (!PAYSTACK_SECRET_KEY) {
       return new Response(JSON.stringify({ error: 'Paystack not configured' }), {
         status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },

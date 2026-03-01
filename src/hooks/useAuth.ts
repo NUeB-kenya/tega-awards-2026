@@ -56,12 +56,12 @@ export function useAuth() {
     return { error };
   };
 
-  const signUp = async (email: string, password: string, fullName: string, country?: string) => {
+  const signUp = async (email: string, password: string, fullName: string, country?: string, phone?: string) => {
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        data: { full_name: fullName, country },
+        data: { full_name: fullName, country, phone },
         emailRedirectTo: window.location.origin,
       },
     });

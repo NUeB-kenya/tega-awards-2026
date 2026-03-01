@@ -55,8 +55,11 @@ export default function SecretariatUsers() {
     secretariat: 'bg-destructive/20 text-destructive',
     judge: 'bg-primary/20 text-primary',
     submitter: 'bg-success/20 text-success',
+    applicant: 'bg-success/20 text-success',
     admin: 'bg-accent/20 text-accent',
   };
+
+  const roleDisplayName = (role: string) => role === 'submitter' ? 'Applicant' : role.charAt(0).toUpperCase() + role.slice(1).replace('_', ' ');
 
   return (
     <DashboardLayout>
@@ -86,7 +89,7 @@ export default function SecretariatUsers() {
                   <TableCell className="text-muted-foreground">{u.email}</TableCell>
                   <TableCell>{u.country || 'N/A'}</TableCell>
                   <TableCell>
-                    <Badge className={`${roleBadgeColors[u.currentRole] || ''} border-0`}>{u.currentRole}</Badge>
+                    <Badge className={`${roleBadgeColors[u.currentRole] || ''} border-0`}>{roleDisplayName(u.currentRole)}</Badge>
                   </TableCell>
                   <TableCell>
                     <Select value={u.currentRole} onValueChange={v => updateRole(u.user_id, u.roleId, v, u.currentRole)}>

@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Award, Plus, FileText, Eye } from 'lucide-react';
+import { Award, Plus, FileText, Eye, Receipt } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 const statusColors: Record<string, string> = {
@@ -25,20 +25,33 @@ const statusColors: Record<string, string> = {
 export default function SubmitterSubmissions() {
   const { user } = useAuth();
   const [submissions, setSubmissions] = useState<any[]>([]);
+  const [paymentRefs, setPaymentRefs] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [viewingDocs, setViewingDocs] = useState<any[] | null>(null);
 
   useEffect(() => {
     if (!user) return;
-    supabase
-      .from('submissions')
-      .select('*')
-      .eq('submitter_id', user.id)
-      .order('created_at', { ascending: false })
-      .then(({ data }) => {
-        setSubmissions(data || []);
-        setLoading(false);
-      });
+    const fetchData = async () => {
+      const { data } = await supabase
+        .from('submissions')
+        .select('*')
+        .eq('submitter_id', user.id)
+        .order('created_at', { ascending: false });
+      setSubmissions(data || []);
+
+      // Fetch payment references for all submissions
+      if (data?.length) {
+        const subIds = data.map(s => s.id);
+        const { data: payments } = await supabase.from('payments').select('submission_id, transaction_reference, payment_status').in('submission_id', subIds);
+        const refs: Record<string, string> = {};
+        payments?.forEach(p => {
+          if (p.transaction_reference) refs[p.submission_id] = p.transaction_reference;
+        });
+        setPaymentRefs(refs);
+      }
+      setLoading(false);
+    };
+    fetchData();
   }, [user]);
 
   const viewDocuments = async (submissionId: string) => {
@@ -97,6 +110,11 @@ export default function SubmitterSubmissions() {
                     <p className="mt-2 text-xs text-muted-foreground">
                       Submissions: {sub.submission_count}/3 {sub.is_locked && '(Locked)'}
                     </p>
+                    {paymentRefs[sub.id] && (
+                      <p className="mt-1 text-xs font-mono text-primary flex items-center gap-1">
+                        <Receipt className="h-3 w-3" /> Ref: {paymentRefs[sub.id]}
+                      </p>
+                    )}
                   </div>
                   <div className="text-right space-y-2">
                     <Badge className={`${statusColors[sub.status] || ''} border-0`}>

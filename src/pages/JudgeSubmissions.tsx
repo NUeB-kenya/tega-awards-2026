@@ -11,8 +11,10 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { useToast } from '@/hooks/use-toast';
-import { Star, Eye, Lock, FileText } from 'lucide-react';
+import { Star, Eye, Lock, FileText, MapPin, ChevronDown, Check } from 'lucide-react';
 
 const VERIFICATION_SOURCES = ['Googled', 'Talked to stakeholders', 'Visited the institution', 'Called the institution', 'Video Called', 'Reviewed official records', 'Third-party verification', 'Other'];
 
@@ -34,6 +36,11 @@ export default function JudgeSubmissions() {
     verification_source: '', verification_notes: '', comments: '',
   });
 
+  const [showCountryUpdate, setShowCountryUpdate] = useState(false);
+  const [countries, setCountries] = useState<any[]>([]);
+  const [countryOpen, setCountryOpen] = useState(false);
+  const [selectedCountry, setSelectedCountry] = useState('');
+
   const judgeCountry = profile?.country || '';
 
   const canScoreSubmission = (sub: any) => {
@@ -42,9 +49,27 @@ export default function JudgeSubmissions() {
   };
 
   useEffect(() => {
+    supabase.from('countries').select('id, name, phone_code, flag_emoji').order('name').then(({ data }) => {
+      if (data) setCountries(data);
+    });
+  }, []);
+
+  const handleCountryUpdate = async () => {
+    if (!user || !selectedCountry) return;
+    const { error } = await supabase.from('profiles').update({ country: selectedCountry }).eq('user_id', user.id);
+    if (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Country updated to ' + selectedCountry });
+      setShowCountryUpdate(false);
+      // Reload page to refresh profile
+      window.location.reload();
+    }
+  };
+
+  useEffect(() => {
     if (!user) return;
     const fetchData = async () => {
-      // Judges can view all screened/submitted applications; scoring remains country-restricted
       const { data: subs } = await supabase
         .from('submissions')
         .select('*')
@@ -54,7 +79,6 @@ export default function JudgeSubmissions() {
       const assignMap: Record<string, any> = {};
       allAssignments?.forEach(a => { assignMap[a.submission_id] = a; });
 
-      // Get my scores
       const { data: myScores } = await supabase.from('scores').select('*').eq('judge_id', user.id);
       const scoreMap: Record<string, any> = {};
       myScores?.forEach(s => { scoreMap[s.submission_id] = s; });
@@ -201,9 +225,21 @@ export default function JudgeSubmissions() {
         <h1 className="mb-2 font-display text-3xl font-bold">
           Verify <span className="text-gradient-gold">Applications</span>
         </h1>
-        <p className="mb-8 text-muted-foreground">
-          You can view all applications. Scoring is restricted to {judgeCountry || 'your assigned country'} submissions only.
-        </p>
+        <div className="mb-8 flex flex-wrap items-center gap-4">
+          <p className="text-muted-foreground">
+            You can view all applications. Scoring is restricted to <strong>{judgeCountry || 'your assigned country'}</strong> submissions only.
+          </p>
+          {!judgeCountry && (
+            <Button variant="outline" size="sm" className="gap-1 text-warning border-warning/30" onClick={() => setShowCountryUpdate(true)}>
+              <MapPin className="h-3 w-3" /> Set Your Country
+            </Button>
+          )}
+          {judgeCountry && (
+            <Button variant="ghost" size="sm" className="gap-1 text-xs" onClick={() => setShowCountryUpdate(true)}>
+              <MapPin className="h-3 w-3" /> Update Country
+            </Button>
+          )}
+        </div>
 
         {loading ? (
           <p className="text-muted-foreground">Loading...</p>
@@ -454,6 +490,50 @@ export default function JudgeSubmissions() {
 
               <Button className="w-full bg-gradient-gold font-semibold" onClick={handleScore}>
                 Submit Verification & Score
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Country Update Dialog */}
+        <Dialog open={showCountryUpdate} onOpenChange={setShowCountryUpdate}>
+          <DialogContent className="max-w-md bg-card border-border">
+            <DialogHeader>
+              <DialogTitle className="font-display">Update Your Country</DialogTitle>
+            </DialogHeader>
+            <p className="text-sm text-muted-foreground">Select your country to enable scoring for applications from your region.</p>
+            <div className="space-y-4">
+              <Popover open={countryOpen} onOpenChange={setCountryOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" role="combobox" className="w-full justify-between bg-secondary border-border">
+                    {selectedCountry || 'Select your country'}
+                    <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[300px] p-0">
+                  <Command>
+                    <CommandInput placeholder="Search country..." />
+                    <CommandList>
+                      <CommandEmpty>No country found.</CommandEmpty>
+                      <CommandGroup>
+                        {countries.map(c => (
+                          <CommandItem
+                            key={c.id}
+                            value={`${c.name} ${c.phone_code}`}
+                            onSelect={() => { setSelectedCountry(c.name); setCountryOpen(false); }}
+                          >
+                            <span className="mr-2">{c.flag_emoji}</span>
+                            <span className="flex-1">{c.name}</span>
+                            {selectedCountry === c.name && <Check className="ml-2 h-4 w-4" />}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+              <Button className="w-full bg-gradient-gold font-semibold" onClick={handleCountryUpdate} disabled={!selectedCountry}>
+                Save Country
               </Button>
             </div>
           </DialogContent>

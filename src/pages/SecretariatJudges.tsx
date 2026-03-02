@@ -44,6 +44,7 @@ export default function SecretariatJudges() {
               <TableRow className="border-border">
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
+                <TableHead>Country</TableHead>
                 <TableHead>Organization</TableHead>
                 <TableHead>Scores Given</TableHead>
                 <TableHead>Joined</TableHead>
@@ -51,13 +52,14 @@ export default function SecretariatJudges() {
             </TableHeader>
             <TableBody>
               {loading ? (
-                <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground">Loading...</TableCell></TableRow>
+              <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">Loading...</TableCell></TableRow>
               ) : judges.length === 0 ? (
-                <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground">No judges found</TableCell></TableRow>
+                <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">No judges found</TableCell></TableRow>
               ) : judges.map(j => (
                 <TableRow key={j.id} className="border-border">
                   <TableCell className="font-medium">{j.full_name}</TableCell>
                   <TableCell className="text-muted-foreground">{j.email}</TableCell>
+                  <TableCell>{j.country || 'N/A'}</TableCell>
                   <TableCell>{j.organization || 'N/A'}</TableCell>
                   <TableCell>
                     <Badge variant="outline" className="border-border">{j.scores_count} scores</Badge>

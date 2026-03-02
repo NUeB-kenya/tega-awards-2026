@@ -72,10 +72,9 @@ export default function SecretariatSubmissions() {
                   <TableCell><Badge variant="outline" className="text-xs border-border">{sub.stage || 'national'}</Badge></TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
-                      {sub.award_categories?.slice(0, 2).map((c: string) => (
-                        <Badge key={c} variant="outline" className="text-[10px] border-border">{c.split(' ').slice(0, 3).join(' ')}…</Badge>
+                      {sub.award_categories?.map((c: string) => (
+                        <Badge key={c} variant="outline" className="text-[10px] border-border">{c}</Badge>
                       ))}
-                      {(sub.award_categories?.length || 0) > 2 && <Badge variant="outline" className="text-[10px] border-border">+{sub.award_categories.length - 2}</Badge>}
                     </div>
                   </TableCell>
                   <TableCell>

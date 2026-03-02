@@ -253,10 +253,9 @@ export default function SecretariatScreening() {
                   <TableCell>{sub.school_country}</TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
-                      {sub.award_categories?.slice(0, 2).map((c: string) => (
-                        <Badge key={c} variant="outline" className="text-[10px] border-border">{c.split(' ').slice(0, 3).join(' ')}…</Badge>
+                      {sub.award_categories?.map((c: string) => (
+                        <Badge key={c} variant="outline" className="text-[10px] border-border">{c}</Badge>
                       ))}
-                      {(sub.award_categories?.length || 0) > 2 && <Badge variant="outline" className="text-[10px] border-border">+{sub.award_categories.length - 2}</Badge>}
                     </div>
                   </TableCell>
                   <TableCell><Badge className={`${statusColor(sub.status)} border-0 text-xs`}>{sub.status}</Badge></TableCell>

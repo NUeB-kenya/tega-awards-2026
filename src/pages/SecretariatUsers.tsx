@@ -33,6 +33,11 @@ export default function SecretariatUsers() {
       await supabase.from('submissions').delete().eq('submitter_id', userId);
     }
 
+    // If demoting back to applicant, unlock their submissions so they can reapply
+    if (newRole === 'submitter' && oldRole !== 'submitter') {
+      await supabase.from('submissions').update({ is_locked: false, submission_count: 0 }).eq('submitter_id', userId);
+    }
+
     const { error } = await supabase.from('user_roles').update({ role: newRole as any }).eq('id', roleId);
     if (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });

@@ -82,6 +82,7 @@ export default function AdminApprovals() {
                 <TableHead>School</TableHead>
                 <TableHead>Applicant</TableHead>
                 <TableHead>Country</TableHead>
+                <TableHead>Categories</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Approval</TableHead>
                 <TableHead>Actions</TableHead>
@@ -89,13 +90,20 @@ export default function AdminApprovals() {
             </TableHeader>
             <TableBody>
               {loading ? (
-                <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">Loading...</TableCell></TableRow>
-              ) : submissions.map(sub => (
-                <TableRow key={sub.id} className="border-border">
-                  <TableCell className="font-medium">{sub.school_name}</TableCell>
-                  <TableCell>{sub.nominator_name}</TableCell>
-                  <TableCell>{sub.school_country}</TableCell>
-                  <TableCell><Badge className={`${statusColors[sub.status] || 'bg-muted text-muted-foreground'} border-0`}>{sub.status}</Badge></TableCell>
+              <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">Loading...</TableCell></TableRow>
+            ) : submissions.map(sub => (
+              <TableRow key={sub.id} className="border-border">
+                <TableCell className="font-medium">{sub.school_name}</TableCell>
+                <TableCell>{sub.nominator_name}</TableCell>
+                <TableCell>{sub.school_country}</TableCell>
+                <TableCell>
+                  <div className="flex flex-wrap gap-1">
+                    {sub.award_categories?.map((c: string) => (
+                      <Badge key={c} variant="outline" className="text-[10px] border-border">{c}</Badge>
+                    ))}
+                  </div>
+                </TableCell>
+                <TableCell><Badge className={`${statusColors[sub.status] || 'bg-muted text-muted-foreground'} border-0`}>{sub.status}</Badge></TableCell>
                   <TableCell><Badge className={`${statusColors[sub.approval_status] || ''} border-0`}>{sub.approval_status}</Badge></TableCell>
                   <TableCell>
                     <div className="flex gap-1">

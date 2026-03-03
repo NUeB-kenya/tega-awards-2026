@@ -15,7 +15,10 @@ export default function AdminApprovals() {
 
   const fetchAll = async () => {
     const { data } = await supabase.from('submissions').select('*').order('created_at', { ascending: false });
-    setSubmissions(data || []);
+    // Sort: pending first, then approved, then declined/banned at bottom
+    const sortOrder: Record<string, number> = { pending: 0, approved: 1, declined: 2, banned: 3 };
+    const sorted = (data || []).sort((a: any, b: any) => (sortOrder[a.approval_status] ?? 1) - (sortOrder[b.approval_status] ?? 1));
+    setSubmissions(sorted);
     setLoading(false);
   };
 

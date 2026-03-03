@@ -27,7 +27,10 @@ export default function SecretariatSubmissions() {
 
   const fetchAll = async () => {
     const { data } = await supabase.from('submissions').select('*').order('created_at', { ascending: false });
-    setSubmissions(data || []);
+    // Sort: pending approval first, approved next, declined/banned at bottom
+    const approvalOrder: Record<string, number> = { pending: 0, approved: 1, declined: 2, banned: 3 };
+    const sorted = (data || []).sort((a: any, b: any) => (approvalOrder[a.approval_status] ?? 1) - (approvalOrder[b.approval_status] ?? 1));
+    setSubmissions(sorted);
     setLoading(false);
   };
 
@@ -57,13 +60,14 @@ export default function SecretariatSubmissions() {
                 <TableHead>Country</TableHead>
                 <TableHead>Stage</TableHead>
                 <TableHead>Categories</TableHead>
+                <TableHead>Approval</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Date</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
-                <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">Loading...</TableCell></TableRow>
+                <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">Loading...</TableCell></TableRow>
               ) : submissions.map(sub => (
                 <TableRow key={sub.id} className="border-border">
                   <TableCell className="font-medium">{sub.school_name}</TableCell>
@@ -76,6 +80,14 @@ export default function SecretariatSubmissions() {
                         <Badge key={c} variant="outline" className="text-[10px] border-border">{c}</Badge>
                       ))}
                     </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge className={`border-0 text-xs ${
+                      sub.approval_status === 'approved' ? 'bg-success/20 text-success' :
+                      sub.approval_status === 'declined' ? 'bg-destructive/20 text-destructive' :
+                      sub.approval_status === 'banned' ? 'bg-destructive/30 text-destructive' :
+                      'bg-warning/20 text-warning'
+                    }`}>{sub.approval_status}</Badge>
                   </TableCell>
                   <TableCell>
                     <Select value={sub.status} onValueChange={v => updateStatus(sub.id, v)}>

@@ -152,13 +152,6 @@ export default function JudgeSubmissions() {
       return;
     }
     const existing = scores[scoringId];
-    
-    // Weighted scoring: Impact(30%) + Innovation(15%) + Scalability(15%) + Equity(10%) + Sustainability(10%) + Evidence(10%) + Ethics(10%)
-    const overall = (
-      (scoreForm.impact * 3) + (scoreForm.innovation * 1.5) + (scoreForm.scalability * 1.5) + 
-      (scoreForm.equity * 1) + (scoreForm.sustainability * 1) + (scoreForm.evidence * 1) + (scoreForm.ethics * 1)
-    );
-
     const payload = {
       submission_id: scoringId,
       judge_id: user.id,
@@ -174,7 +167,7 @@ export default function JudgeSubmissions() {
       verification_source: scoreForm.verification_source,
       verification_notes: scoreForm.verification_notes,
       comments: scoreForm.comments,
-      overall_score: overall,
+      // overall_score is a generated column — do NOT include it
     };
 
     let error;
@@ -234,10 +227,15 @@ export default function JudgeSubmissions() {
               <MapPin className="h-3 w-3" /> Set Your Country
             </Button>
           )}
-          {judgeCountry && (
+          {judgeCountry && Object.keys(scores).length === 0 && (
             <Button variant="ghost" size="sm" className="gap-1 text-xs" onClick={() => setShowCountryUpdate(true)}>
               <MapPin className="h-3 w-3" /> Update Country
             </Button>
+          )}
+          {judgeCountry && Object.keys(scores).length > 0 && (
+            <Badge variant="outline" className="gap-1 text-xs border-border">
+              <MapPin className="h-3 w-3" /> {judgeCountry} (locked)
+            </Badge>
           )}
         </div>
 

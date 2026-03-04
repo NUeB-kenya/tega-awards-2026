@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Slider } from '@/components/ui/slider';
 import { useToast } from '@/hooks/use-toast';
 import { Star, Eye, Lock, FileText, MapPin, ChevronDown, Check } from 'lucide-react';
 
@@ -433,25 +434,39 @@ export default function JudgeSubmissions() {
               </div>
 
               {/* Core scoring - weighted rubric */}
-              <div className="space-y-4">
+              <div className="space-y-6">
                 <h3 className="font-semibold">Scoring Criteria</h3>
                 {([
-                  { key: 'impact', label: 'Impact & Outcomes (30%) — Measurable results, learning outcomes, retention, equity gains', weight: 30 },
-                  { key: 'innovation', label: 'Innovation & Originality (15%) — Novel approach, solves real constraints', weight: 15 },
-                  { key: 'scalability', label: 'Scalability & Replicability (15%) — Can scale to more learners/regions', weight: 15 },
-                  { key: 'equity', label: 'Equity, Inclusion & Access (10%) — Inclusive design, reaching underserved groups', weight: 10 },
-                  { key: 'sustainability', label: 'Sustainability & Governance (10%) — Long-term viability, financial resilience', weight: 10 },
-                  { key: 'evidence', label: 'Evidence & Verification (10%) — Quality of documentation, third-party proof', weight: 10 },
-                  { key: 'ethics', label: 'Ethics, Safety & Integrity (10%) — Child safeguarding, data privacy, transparency', weight: 10 },
-                ] as const).map(({ key, label, weight }) => (
-                  <div key={key}>
-                    <Label>{label} (0-10)</Label>
-                    <Input type="number" min={0} max={10}
-                      value={scoreForm[key]}
-                      onChange={e => setScoreForm(p => ({ ...p, [key]: parseInt(e.target.value) || 0 }))}
-                      className="mt-1 bg-secondary w-24" />
+                  { key: 'impact', label: 'Impact & Outcomes', pct: '30%', desc: 'Measurable results, learning outcomes, retention, equity gains', weight: 3.0 },
+                  { key: 'innovation', label: 'Innovation & Originality', pct: '15%', desc: 'Novel approach, solves real constraints', weight: 1.5 },
+                  { key: 'scalability', label: 'Scalability & Replicability', pct: '15%', desc: 'Can scale to more learners/regions', weight: 1.5 },
+                  { key: 'equity', label: 'Equity, Inclusion & Access', pct: '10%', desc: 'Inclusive design, reaching underserved groups', weight: 1.0 },
+                  { key: 'sustainability', label: 'Sustainability & Governance', pct: '10%', desc: 'Long-term viability, financial resilience', weight: 1.0 },
+                  { key: 'evidence', label: 'Evidence & Verification', pct: '10%', desc: 'Quality of documentation, third-party proof', weight: 1.0 },
+                  { key: 'ethics', label: 'Ethics, Safety & Integrity', pct: '10%', desc: 'Child safeguarding, data privacy, transparency', weight: 1.0 },
+                ] as const).map(({ key, label, pct, desc, weight }) => (
+                  <div key={key} className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-sm font-medium">{label}</Label>
+                      <Badge variant="outline" className="border-border text-xs font-semibold">{pct}</Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground">{desc}</p>
+                    <div className="flex items-center gap-4">
+                      <Slider
+                        min={0}
+                        max={10}
+                        step={1}
+                        value={[scoreForm[key]]}
+                        onValueChange={([v]) => setScoreForm(p => ({ ...p, [key]: v }))}
+                        className="flex-1"
+                      />
+                      <span className="w-16 text-right text-sm font-bold tabular-nums">
+                        {scoreForm[key]}/10
+                        <span className="text-xs text-muted-foreground ml-1">({(scoreForm[key] * weight).toFixed(1)}pts)</span>
+                      </span>
+                    </div>
                     {scoreForm[key] < 4 && (
-                      <p className="text-xs text-destructive mt-1">⚠ Low score — comment required below</p>
+                      <p className="text-xs text-destructive">⚠ Low score — comment required below</p>
                     )}
                   </div>
                 ))}

@@ -31,7 +31,7 @@ export default function SecretariatScreening() {
 
   const fetchData = async () => {
     const [subsRes, panelsRes] = await Promise.all([
-      supabase.from('submissions').select('*').in('status', ['submitted', 'paid', 'screened']).order('created_at', { ascending: true }),
+      supabase.from('submissions').select('*').in('status', ['submitted', 'paid']).order('created_at', { ascending: true }),
       supabase.from('panels').select('*'),
     ]);
     setSubmissions(subsRes.data || []);
@@ -212,11 +212,10 @@ export default function SecretariatScreening() {
         <p className="mb-8 text-muted-foreground">Quality gate — review completeness, category correctness, evidence standards, and duplicates before sending to judges.</p>
 
         {/* Summary cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
           {[
-            { label: 'Awaiting Screening', count: submissions.filter(s => s.status === 'submitted' || s.status === 'paid').length, color: 'text-warning' },
-            { label: 'Screened (Ready)', count: submissions.filter(s => s.status === 'screened').length, color: 'text-success' },
-            { label: 'Assigned to Panel', count: submissions.filter(s => s.status === 'assigned').length, color: 'text-primary' },
+            { label: 'Submitted (Unpaid)', count: submissions.filter(s => s.status === 'submitted').length, color: 'text-warning' },
+            { label: 'Paid (Ready to Screen)', count: submissions.filter(s => s.status === 'paid').length, color: 'text-success' },
             { label: 'Total in Queue', count: submissions.length, color: 'text-foreground' },
           ].map(c => (
             <Card key={c.label} className="glass-card">
@@ -276,11 +275,6 @@ export default function SecretariatScreening() {
                             <XCircle className="h-3 w-3" /> Reject
                           </Button>
                         </>
-                      )}
-                      {sub.status === 'screened' && (
-                        <Button size="sm" className="bg-gradient-gold gap-1" onClick={() => openAction(sub.id, 'assign')}>
-                          Assign to Panel
-                        </Button>
                       )}
                     </div>
                   </TableCell>

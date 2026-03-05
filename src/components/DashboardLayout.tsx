@@ -7,26 +7,13 @@ import NotificationBell from '@/components/NotificationBell';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { LogOut, LayoutDashboard, FileText, Users, Award, Settings, Shield, CheckSquare, GitBranch, Layers, Menu, X, Bell, DollarSign, MessageSquare } from 'lucide-react';
 
-const navItems: Record<AppRole, { label: string; href: string; icon: React.ElementType }[]> = {
+const navItems: Record<string, { label: string; href: string; icon: React.ElementType }[]> = {
   submitter: [
     { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { label: 'My Applications', href: '/submissions', icon: FileText },
-    { label: 'New Application', href: '/submissions/new', icon: Award },
     { label: 'Notifications', href: '/notifications', icon: Bell },
   ],
   judge: [
-    { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { label: 'Submissions', href: '/judge/submissions', icon: FileText },
-    { label: 'My Scores', href: '/judge/scores', icon: Award },
-    { label: 'Notifications', href: '/notifications', icon: Bell },
-  ],
-  panel_chair: [
-    { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { label: 'Submissions', href: '/judge/submissions', icon: FileText },
-    { label: 'My Scores', href: '/judge/scores', icon: Award },
-    { label: 'Notifications', href: '/notifications', icon: Bell },
-  ],
-  global_jury: [
     { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { label: 'Submissions', href: '/judge/submissions', icon: FileText },
     { label: 'My Scores', href: '/judge/scores', icon: Award },
@@ -44,7 +31,7 @@ const navItems: Record<AppRole, { label: string; href: string; icon: React.Eleme
     { label: 'Statistics', href: '/secretariat/statistics', icon: CheckSquare },
     { label: 'Notifications', href: '/notifications', icon: Bell },
   ],
-  country_coordinator: [
+  country_representative: [
     { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { label: 'Screening Queue', href: '/secretariat/screening', icon: Shield },
     { label: 'All Submissions', href: '/secretariat/submissions', icon: FileText },
@@ -76,27 +63,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const location = useLocation();
   const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const items = role ? navItems[role] : [];
+  const items = role ? (navItems[role] || []) : [];
 
   const handleSignOut = async () => {
     await signOut();
     navigate('/auth');
   };
 
-  const roleLabelMap: Record<AppRole, string> = {
+  const roleLabelMap: Record<string, string> = {
     submitter: 'Applicant',
     judge: 'Judge',
-    panel_chair: 'Panel Chair',
-    global_jury: 'Global Jury',
-    country_coordinator: 'Country Coordinator',
+    country_representative: 'Country Representative',
     secretariat: 'Secretariat',
     admin: 'Admin',
     super_admin: 'Super Admin',
   };
-  const roleLabel = role ? roleLabelMap[role] : 'Applicant';
-  const roleBadgeColor = role === 'secretariat' || role === 'country_coordinator'
+  const roleLabel = role ? (roleLabelMap[role] || role) : 'Applicant';
+  const roleBadgeColor = role === 'secretariat' || role === 'country_representative'
     ? 'bg-destructive/20 text-destructive'
-    : role === 'judge' || role === 'panel_chair' || role === 'global_jury'
+    : role === 'judge'
     ? 'bg-primary/20 text-primary'
     : role === 'admin' || role === 'super_admin'
     ? 'bg-accent/20 text-accent'
@@ -162,7 +147,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex min-h-screen bg-background">
-      {/* Mobile header */}
       {isMobile && (
         <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between border-b border-border bg-card p-3">
           <div className="flex items-center gap-3">
@@ -175,7 +159,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </header>
       )}
 
-      {/* Mobile overlay */}
       {isMobile && sidebarOpen && (
         <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm" onClick={() => setSidebarOpen(false)}>
           <aside className="fixed left-0 top-0 h-full w-72 bg-sidebar flex flex-col border-r border-border" onClick={e => e.stopPropagation()}>
@@ -184,7 +167,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       )}
 
-      {/* Desktop sidebar */}
       {!isMobile && (
         <aside className="fixed left-0 top-0 z-40 h-screen w-64 border-r border-border bg-sidebar flex flex-col">
           {sidebarContent}

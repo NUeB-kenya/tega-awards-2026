@@ -9,6 +9,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { ChevronDown, Check } from 'lucide-react';
 import tegaLogo from '@/assets/tega-logo.png';
@@ -19,6 +21,12 @@ interface CountryOption {
   phone_code: string;
   flag_emoji: string;
 }
+
+const SIGNUP_TYPES = [
+  { value: 'applicant', label: 'School / Organisation' },
+  { value: 'judge', label: 'Country Judge' },
+  { value: 'country_representative', label: 'Country Representative' },
+];
 
 export default function Auth() {
   const [loginEmail, setLoginEmail] = useState('');
@@ -31,11 +39,13 @@ export default function Auth() {
   const [countries, setCountries] = useState<CountryOption[]>([]);
   const [countryOpen, setCountryOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [signupType, setSignupType] = useState('applicant');
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const { signIn, signUp, user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Hidden admin login: 5 taps on bottom-right logo
+  // Hidden admin login
   const tapCountRef = useRef(0);
   const tapTimerRef = useRef<ReturnType<typeof setTimeout>>();
   const [showAdminLogin, setShowAdminLogin] = useState(false);
@@ -75,6 +85,10 @@ export default function Auth() {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!acceptedTerms) {
+      toast({ title: 'Terms Required', description: 'You must accept the Terms and Conditions to sign up.', variant: 'destructive' });
+      return;
+    }
     if (!selectedCountry) {
       toast({ title: 'Country required', description: 'Please select your country code.', variant: 'destructive' });
       return;
@@ -85,11 +99,12 @@ export default function Auth() {
     }
     setIsLoading(true);
     const fullPhone = `${selectedCountry.phone_code}${phoneNumber.trim()}`;
-    const { error } = await signUp(signupEmail, signupPassword, signupName, selectedCountry.name, fullPhone);
+    const { error } = await signUp(signupEmail, signupPassword, signupName, selectedCountry.name, fullPhone, signupType);
     setIsLoading(false);
     if (error) {
       toast({ title: 'Signup failed', description: error.message, variant: 'destructive' });
     } else {
+      // Update profile account_type
       toast({
         title: 'Check your email!',
         description: 'We sent you a verification link. Please verify your email before logging in.',
@@ -141,8 +156,21 @@ export default function Auth() {
 
               <TabsContent value="signup" className="mt-0">
                 <CardTitle className="mb-1 font-display text-xl">Create Account</CardTitle>
-                <CardDescription className="mb-6">Sign up as an applicant for the TEGA Awards</CardDescription>
+                <CardDescription className="mb-6">Join the TEGA Awards platform</CardDescription>
                 <form onSubmit={handleSignup} className="space-y-4">
+                  <div>
+                    <Label>I am applying as *</Label>
+                    <Select value={signupType} onValueChange={setSignupType}>
+                      <SelectTrigger className="mt-1.5 bg-secondary border-border">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {SIGNUP_TYPES.map(t => (
+                          <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <div>
                     <Label htmlFor="signup-name">Full Name</Label>
                     <Input id="signup-name" value={signupName} onChange={e => setSignupName(e.target.value)} placeholder="Your full name" required className="mt-1.5 bg-secondary border-border" />
@@ -205,8 +233,23 @@ export default function Auth() {
                     <Label htmlFor="signup-password">Password</Label>
                     <Input id="signup-password" type="password" value={signupPassword} onChange={e => setSignupPassword(e.target.value)} placeholder="Min 6 characters" required minLength={6} className="mt-1.5 bg-secondary border-border" />
                   </div>
-                  <Button type="submit" className="w-full bg-gradient-gold font-semibold" disabled={isLoading}>
-                    {isLoading ? 'Creating account...' : 'Create Applicant Account'}
+
+                  <div className="flex items-start gap-3 pt-2">
+                    <Checkbox
+                      id="terms"
+                      checked={acceptedTerms}
+                      onCheckedChange={(v) => setAcceptedTerms(v === true)}
+                      className="mt-0.5"
+                    />
+                    <label htmlFor="terms" className="text-xs text-muted-foreground cursor-pointer leading-relaxed">
+                      I agree to the TEGA Awards{' '}
+                      <Link to="/terms" className="underline text-primary hover:text-primary/80" target="_blank">Terms and Conditions</Link> and{' '}
+                      <Link to="/privacy" className="underline text-primary hover:text-primary/80" target="_blank">Privacy Policy</Link>.
+                    </label>
+                  </div>
+
+                  <Button type="submit" className="w-full bg-gradient-gold font-semibold" disabled={isLoading || !acceptedTerms}>
+                    {isLoading ? 'Creating account...' : 'Create Account'}
                   </Button>
                 </form>
               </TabsContent>
@@ -241,7 +284,6 @@ export default function Auth() {
         </p>
       </div>
 
-      {/* Hidden 5-tap trigger for admin login */}
       <div
         className="absolute bottom-4 right-4 opacity-10 cursor-default select-none"
         onClick={handleSecretTap}

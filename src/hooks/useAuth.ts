@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { User, Session } from '@supabase/supabase-js';
 
-export type AppRole = 'submitter' | 'judge' | 'secretariat' | 'admin' | 'country_coordinator' | 'panel_chair' | 'global_jury' | 'super_admin';
+export type AppRole = 'submitter' | 'judge' | 'secretariat' | 'admin' | 'country_representative' | 'super_admin';
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
@@ -24,7 +24,11 @@ export function useAuth() {
               .select('role')
               .eq('user_id', session.user.id)
               .single();
-            setRole(roleData?.role as AppRole ?? null);
+            // Map legacy roles
+            let resolvedRole = roleData?.role as string ?? null;
+            if (resolvedRole === 'country_coordinator') resolvedRole = 'country_representative';
+            if (resolvedRole === 'panel_chair' || resolvedRole === 'global_jury') resolvedRole = 'judge';
+            setRole(resolvedRole as AppRole ?? null);
 
             const { data: profileData } = await supabase
               .from('profiles')
@@ -56,12 +60,12 @@ export function useAuth() {
     return { error };
   };
 
-  const signUp = async (email: string, password: string, fullName: string, country?: string, phone?: string) => {
+  const signUp = async (email: string, password: string, fullName: string, country?: string, phone?: string, accountType?: string) => {
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        data: { full_name: fullName, country, phone },
+        data: { full_name: fullName, country, phone, account_type: accountType || 'applicant' },
         emailRedirectTo: window.location.origin,
       },
     });

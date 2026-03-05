@@ -10,8 +10,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Upload, X, FileText } from 'lucide-react';
+import { ArrowLeft, Upload, X, FileText, AlertTriangle } from 'lucide-react';
 
 const AWARD_CATEGORIES = [
   'Global Transformational School of the Year',
@@ -30,42 +31,143 @@ const AWARD_CATEGORIES = [
   'Youth Education Changemaker Award',
 ];
 
+const CATEGORY_DOCUMENTS: Record<string, { label: string; docs: string[] }> = {
+  'Global Transformational School of the Year': {
+    label: 'Schools demonstrating systemic transformation in education',
+    docs: ['School Transformation Report (3–5 pages: model, philosophy, transformation)', 'Impact Evidence Report (student outcomes, test scores, graduation rates)', 'External Validation / Recognition (awards, partnerships, media, endorsements)'],
+  },
+  'Global Education Innovation of the Year': {
+    label: 'Breakthrough educational ideas, programs, or methodologies',
+    docs: ['Innovation Description Document (what it is, how it works, problem solved)', 'Implementation & Results Evidence (data, case studies, pilot results)', 'Supporting Media or Documentation (screenshots, reports, research papers)'],
+  },
+  'Lifetime Contribution to Education Transformation': {
+    label: 'Individuals with long-term impact in education',
+    docs: ['Professional Portfolio / Biography (career achievements, milestones)', 'Evidence of Long-Term Impact (publications, reforms, institutions built)', 'Letters of Recognition / Testimonials (from institutions, leaders)'],
+  },
+  'Transformational Educator of the Year': {
+    label: 'Teachers who transform student learning and outcomes',
+    docs: ['Teaching Philosophy & Practice Statement', 'Student Impact Evidence (results, projects, testimonials)', 'Classroom Artifacts (lesson plans, learning materials, student work)'],
+  },
+  'Innovative School Leader / Principal of the Year': {
+    label: 'School leaders driving innovation and institutional change',
+    docs: ['Leadership Strategy Report', 'School Performance Evidence (measurable improvement)', 'Stakeholder Testimonials (teachers, parents, community)'],
+  },
+  'Emerging Education Leader Award (Under 40)': {
+    label: 'Young leaders in education',
+    docs: ['Leadership Portfolio (initiatives, projects)', 'Impact Evidence (results in schools or programs)', 'Recognition or Media Mentions (awards, press)'],
+  },
+  'Education System Leadership Award': {
+    label: 'Leaders impacting national or regional education systems',
+    docs: ['Policy or System Reform Documentation', 'Evidence of System-Level Impact (programs, policy results)', 'Institutional Endorsements'],
+  },
+  'Most Innovative School Model': {
+    label: 'Schools with new or alternative education models',
+    docs: ['School Model Framework Document', 'Evidence of Implementation', 'Student Outcomes & Case Studies'],
+  },
+  'Rural & Underserved Communities Impact Award': {
+    label: 'Impact in rural and underserved communities',
+    docs: ['Community Impact Report', 'Evidence of Access Improvement (enrollment, infrastructure)', 'Community Testimonials'],
+  },
+  'Inclusive & Equitable Learning Excellence Award': {
+    label: 'Excellence in inclusive and equitable learning',
+    docs: ['Inclusion Strategy Document', 'Evidence of Accessibility & Equity Outcomes', 'Supporting Policy or Program Materials'],
+  },
+  'AI & Data Innovation in Education Award': {
+    label: 'AI and data innovation in education',
+    docs: ['AI / Data Solution Description', 'Usage & Impact Data', 'Technical or Research Documentation'],
+  },
+  'Best EdTech Solution for Low-Resource Settings': {
+    label: 'EdTech for low-resource environments',
+    docs: ['EdTech Solution Overview', 'Evidence of Deployment in Low-Resource Environments', 'User Impact Data (students/teachers reached)'],
+  },
+  'STEM & Future Skills Advancement Award': {
+    label: 'STEM and future skills advancement',
+    docs: ['STEM Program Description', 'Student Participation & Achievement Data', 'Project / Innovation Portfolio'],
+  },
+  'Youth Education Changemaker Award': {
+    label: 'Young leaders transforming education',
+    docs: ['Initiative or Project Description', 'Evidence of Youth Impact', 'Mentor or Institutional Endorsement'],
+  },
+};
+
 const ROLES = ['Director', 'Principal', 'Manager', 'Teacher', 'EdTech Representative', 'Researcher', 'Ministry/Government Official', 'Other'];
-const INSTITUTION_TYPES = ['Public Primary School', 'Private Primary School', 'Public Secondary School', 'Private Secondary School', 'TVET Institution', 'University', 'EdTech Company', 'NGO/Foundation', 'Ministry/Government Program', 'Research Institution', 'Other'];
+const INSTITUTION_TYPES = [
+  'Public Primary School', 'Private Primary School',
+  'Public Secondary School', 'Private Secondary School',
+  'Public Primary & Secondary School', 'Private Primary & Secondary School',
+  'TVET Institution', 'University',
+  'EdTech Company', 'NGO/Foundation',
+  'Ministry/Government Program', 'Research Institution', 'Other',
+];
 const INSTITUTION_SIZES = ['Small (Under 500 learners)', 'Medium (500-2000 learners)', 'Large (2000+ learners)'];
 
 export default function SubmissionForm() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [step, setStep] = useState<'section_a' | 'section_b' | 'payment' | 'review'>('section_a');
+  const [step, setStep] = useState<'section_a' | 'nominations' | 'section_b' | 'payment' | 'review'>('section_a');
   const [existingSubmission, setExistingSubmission] = useState<any>(null);
-  const [submissionCount, setSubmissionCount] = useState(0);
-  const [isLocked, setIsLocked] = useState(false);
+  const [alreadySubmitted, setAlreadySubmitted] = useState(false);
   const [categoryFiles, setCategoryFiles] = useState<Record<string, File[]>>({});
+  const [orgFiles, setOrgFiles] = useState<File[]>([]);
   const [uploadingDocs, setUploadingDocs] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState<'pending' | 'completed' | 'waived'>('pending');
   const [processingPayment, setProcessingPayment] = useState(false);
+  const [nominationStatements, setNominationStatements] = useState<Record<string, string>>({});
+  const [showDocWarning, setShowDocWarning] = useState(false);
+  const [existingDocs, setExistingDocs] = useState<any[]>([]);
+  const [checkingPayment, setCheckingPayment] = useState(false);
+
+  // Payment callback effect - must be before any conditional returns
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const reference = params.get('reference');
+    if (reference && params.get('payment') === 'verify') {
+      const verifyPayment = async () => {
+        const { data } = await supabase.functions.invoke('verify-payment', { body: { reference } });
+        if (data?.success) {
+          setPaymentStatus('completed');
+          setStep('review');
+          toast({ title: '✅ Payment confirmed!' });
+        } else {
+          toast({ title: 'Payment verification failed', variant: 'destructive' });
+          setStep('payment');
+        }
+        window.history.replaceState({}, '', window.location.pathname);
+      };
+      verifyPayment();
+    }
+  }, []);
 
   const [form, setForm] = useState({
-    nominator_name: '',
-    nominator_email: '',
-    nominator_phone: '',
+    nominator_name: profile?.full_name || '',
+    nominator_email: profile?.email || user?.email || '',
+    nominator_phone: profile?.phone || '',
     nominator_role: '',
     school_name: '',
     school_city: '',
-    school_country: '',
+    school_country: profile?.country || '',
     institution_type: '',
     institution_size: '',
-    nomination_statement: '',
     past_awards: '',
     communication_preference: 'Email',
   });
 
   useEffect(() => {
     if (!user) return;
+    // Auto-fill from profile
+    if (profile) {
+      setForm(prev => ({
+        ...prev,
+        nominator_name: prev.nominator_name || profile.full_name || '',
+        nominator_email: profile.email || user.email || '',
+        nominator_phone: prev.nominator_phone || profile.phone || '',
+        school_country: prev.school_country || profile.country || '',
+      }));
+    }
+
     const fetchExisting = async () => {
       const { data } = await supabase
         .from('submissions')
@@ -74,34 +176,42 @@ export default function SubmissionForm() {
         .order('created_at', { ascending: false })
         .limit(1);
       if (data && data.length > 0) {
-        setExistingSubmission(data[0]);
-        setSubmissionCount(data[0].submission_count || 1);
-        setIsLocked(data[0].is_locked || false);
+        const sub = data[0];
+        if (sub.status !== 'draft' && sub.status !== 'submitted') {
+          setAlreadySubmitted(true);
+          return;
+        }
+        setExistingSubmission(sub);
         setForm({
-          nominator_name: data[0].nominator_name,
-          nominator_email: data[0].nominator_email,
-          nominator_phone: data[0].nominator_phone || '',
-          nominator_role: data[0].nominator_role || '',
-          school_name: data[0].school_name,
-          school_city: data[0].school_city,
-          school_country: data[0].school_country,
-          institution_type: data[0].institution_type || '',
-          institution_size: data[0].institution_size || '',
-          nomination_statement: data[0].nomination_statement,
-          past_awards: data[0].past_awards || '',
-          communication_preference: data[0].communication_preference || 'Email',
+          nominator_name: sub.nominator_name,
+          nominator_email: sub.nominator_email,
+          nominator_phone: sub.nominator_phone || '',
+          nominator_role: sub.nominator_role || '',
+          school_name: sub.school_name,
+          school_city: sub.school_city,
+          school_country: sub.school_country,
+          institution_type: sub.institution_type || '',
+          institution_size: sub.institution_size || '',
+          past_awards: sub.past_awards || '',
+          communication_preference: sub.communication_preference || 'Email',
         });
-        setSelectedCategories(data[0].award_categories || []);
-        // Check payment status
-        const { data: paymentData } = await supabase.from('payments').select('payment_status').eq('submission_id', data[0].id).order('created_at', { ascending: false }).limit(1);
+        setSelectedCategories(sub.award_categories || []);
+        setNominationStatements((sub as any).nomination_statements || {});
+
+        // Load existing docs
+        const { data: docs } = await supabase.from('submission_documents').select('*').eq('submission_id', sub.id);
+        if (docs) setExistingDocs(docs);
+
+        // Check payment
+        const { data: paymentData } = await supabase.from('payments').select('payment_status').eq('submission_id', sub.id).order('created_at', { ascending: false }).limit(1);
         if (paymentData?.[0]?.payment_status === 'completed' || paymentData?.[0]?.payment_status === 'waived') {
           setPaymentStatus(paymentData[0].payment_status as any);
         }
-        if (data[0].status === 'paid') setPaymentStatus('completed');
+        if ((sub as any).status === 'paid') setPaymentStatus('completed');
       }
     };
     fetchExisting();
-  }, [user]);
+  }, [user, profile]);
 
   const updateForm = (field: string, value: string) => setForm(prev => ({ ...prev, [field]: value }));
 
@@ -125,6 +235,20 @@ export default function SubmissionForm() {
     }));
   };
 
+  // If already submitted, show locked message
+  if (alreadySubmitted) {
+    return (
+      <DashboardLayout>
+        <div className="mx-auto max-w-3xl animate-fade-in text-center py-20">
+          <CheckIcon className="h-16 w-16 text-success mx-auto mb-4" />
+          <h1 className="font-display text-3xl font-bold mb-2">Application Already Submitted</h1>
+          <p className="text-muted-foreground mb-6">Your application has been submitted and is being processed. You cannot submit another application.</p>
+          <Button variant="outline" onClick={() => navigate('/submissions')}>View My Applications</Button>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   const handleSectionA = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
@@ -132,53 +256,114 @@ export default function SubmissionForm() {
       toast({ title: 'Select at least one award category', variant: 'destructive' });
       return;
     }
-    if (isLocked) {
-      toast({ title: 'Submissions locked', description: 'You have reached the maximum of 3 submissions.', variant: 'destructive' });
+    if (orgFiles.length === 0 && !existingDocs.some(d => d.category === 'organization')) {
+      toast({ title: 'Registration documents required', description: 'Please upload your school/organisation registration documents.', variant: 'destructive' });
       return;
     }
 
     setIsSubmitting(true);
-    const newCount = existingSubmission ? (existingSubmission.submission_count || 1) + 1 : 1;
-    const locked = newCount >= 3;
 
     const payload = {
       submitter_id: user.id,
-      ...form,
+      nominator_name: form.nominator_name,
+      nominator_email: form.nominator_email,
+      nominator_phone: form.nominator_phone,
+      nominator_role: form.nominator_role,
+      school_name: form.school_name,
+      school_city: form.school_city,
+      school_country: form.school_country,
+      institution_type: form.institution_type,
+      institution_size: form.institution_size,
+      past_awards: form.past_awards,
+      communication_preference: form.communication_preference,
       award_categories: selectedCategories,
+      nomination_statement: 'See per-category statements',
+      nomination_statements: nominationStatements as any,
       region: form.school_country,
-      submission_count: newCount,
-      is_locked: locked,
+      submission_count: 1,
+      is_locked: false,
+      status: 'draft',
     };
 
+    let subId = existingSubmission?.id;
     let error;
     if (existingSubmission) {
       ({ error } = await supabase.from('submissions').update(payload).eq('id', existingSubmission.id));
     } else {
-      ({ error } = await supabase.from('submissions').insert(payload));
+      const res = await supabase.from('submissions').insert(payload).select().single();
+      error = res.error;
+      if (res.data) subId = res.data.id;
+    }
+
+    // Upload org docs
+    if (!error && subId && orgFiles.length > 0) {
+      for (const file of orgFiles) {
+        const filePath = `${user.id}/${subId}/organization/${file.name}`;
+        await supabase.storage.from('documents').upload(filePath, file, { upsert: true });
+        await supabase.from('submission_documents').insert({
+          submission_id: subId,
+          category: 'organization',
+          file_name: file.name,
+          file_path: filePath,
+          file_size: file.size,
+          mime_type: file.type,
+        });
+      }
     }
 
     setIsSubmitting(false);
     if (error) {
-      toast({ title: 'Submission failed', description: error.message, variant: 'destructive' });
+      toast({ title: 'Save failed', description: error.message, variant: 'destructive' });
     } else {
-      // Refresh
-      const { data } = await supabase.from('submissions').select('*').eq('submitter_id', user.id).order('created_at', { ascending: false }).limit(1);
-      if (data?.[0]) {
-        setExistingSubmission(data[0]);
-        setSubmissionCount(data[0].submission_count);
-        setIsLocked(data[0].is_locked);
+      if (!existingSubmission) {
+        const { data } = await supabase.from('submissions').select('*').eq('submitter_id', user.id).order('created_at', { ascending: false }).limit(1);
+        if (data?.[0]) setExistingSubmission(data[0]);
       }
       toast({ title: 'Section A saved!' });
-      setStep('section_b');
+      setStep('nominations');
     }
+  };
+
+  const handleNominations = () => {
+    for (const cat of selectedCategories) {
+      if (!nominationStatements[cat]?.trim()) {
+        toast({ title: `Nomination statement required for "${cat}"`, variant: 'destructive' });
+        return;
+      }
+    }
+    // Save nomination statements
+    if (existingSubmission) {
+      supabase.from('submissions').update({ nomination_statements: nominationStatements } as any).eq('id', existingSubmission.id);
+    }
+    setStep('section_b');
   };
 
   const handleUploadDocuments = async () => {
     if (!user || !existingSubmission) return;
-    setUploadingDocs(true);
 
-    // Delete old docs for this submission
-    await supabase.from('submission_documents').delete().eq('submission_id', existingSubmission.id);
+    // Check minimum 2 docs per category
+    for (const cat of selectedCategories) {
+      const newFiles = categoryFiles[cat]?.length || 0;
+      const existingCatDocs = existingDocs.filter(d => d.category === cat).length;
+      const total = newFiles + existingCatDocs;
+      if (total < 2) {
+        if (total < 1) {
+          setShowDocWarning(true);
+          return;
+        }
+        // 1 doc - show warning popup
+        setShowDocWarning(true);
+        return;
+      }
+    }
+
+    await doUpload();
+  };
+
+  const doUpload = async () => {
+    if (!user || !existingSubmission) return;
+    setUploadingDocs(true);
+    setShowDocWarning(false);
 
     for (const category of Object.keys(categoryFiles)) {
       for (const file of categoryFiles[category]) {
@@ -205,66 +390,50 @@ export default function SubmissionForm() {
     setStep('payment');
   };
 
+  const proceedWithWarning = () => {
+    // Check if at least 1 doc per category with new files
+    for (const cat of selectedCategories) {
+      const newFiles = categoryFiles[cat]?.length || 0;
+      const existingCatDocs = existingDocs.filter(d => d.category === cat).length;
+      if (newFiles + existingCatDocs < 1) {
+        toast({ title: 'At least one document required per category', variant: 'destructive' });
+        setShowDocWarning(false);
+        return;
+      }
+    }
+    doUpload();
+  };
+
   const handlePayment = async () => {
     if (!existingSubmission || !user) return;
     setProcessingPayment(true);
-    
     const callbackUrl = `${window.location.origin}/submissions/new?payment=verify`;
-    
     const { data, error } = await supabase.functions.invoke('initialize-payment', {
       body: {
         submissionId: existingSubmission.id,
         email: form.nominator_email || user.email,
-        amount: 100, // KES 1 = 100 kobo
+        amount: 100,
         callbackUrl,
       },
     });
-
     setProcessingPayment(false);
-
     if (error || !data?.authorization_url) {
-      toast({ title: 'Payment initialization failed', description: 'Please try again or contact support.', variant: 'destructive' });
+      toast({ title: 'Payment initialization failed', description: 'Please try again.', variant: 'destructive' });
       return;
     }
-
-    // Redirect to Paystack
     window.location.href = data.authorization_url;
   };
 
-  // Check for payment callback
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const reference = params.get('reference');
-    if (reference && params.get('payment') === 'verify') {
-      const verifyPayment = async () => {
-        const { data } = await supabase.functions.invoke('verify-payment', {
-          body: { reference },
-        });
-        if (data?.success) {
-          setPaymentStatus('completed');
-          setStep('review');
-          toast({ title: '✅ Payment confirmed!', description: 'You can now submit your application.' });
-        } else {
-          toast({ title: 'Payment verification failed', variant: 'destructive' });
-          setStep('payment');
-        }
-        // Clean URL
-        window.history.replaceState({}, '', window.location.pathname);
-      };
-      verifyPayment();
-    }
-  }, []);
+  // Payment verification useEffect moved to top of component
 
   const handleFinalSubmit = async () => {
     if (!existingSubmission) return;
     if (paymentStatus !== 'completed' && paymentStatus !== 'waived') {
-      toast({ title: 'Payment required', description: 'Please complete payment before submitting.', variant: 'destructive' });
+      toast({ title: 'Payment required', variant: 'destructive' });
       setStep('payment');
       return;
     }
-    await supabase.from('submissions').update({ status: 'submitted' }).eq('id', existingSubmission.id);
-    
-    // Send confirmation notification
+    await supabase.from('submissions').update({ status: 'submitted', is_locked: true }).eq('id', existingSubmission.id);
     try {
       await supabase.from('notifications').insert({
         user_id: user!.id,
@@ -272,11 +441,12 @@ export default function SubmissionForm() {
         message: `Your TEGA Awards application for ${form.school_name} has been successfully submitted and is now in the screening queue.`,
         type: 'success',
       });
-    } catch {} // Don't block on notification failure
-
+    } catch {}
     toast({ title: 'Application submitted successfully!' });
     navigate('/submissions');
   };
+
+  const steps = ['section_a', 'nominations', 'section_b', 'payment', 'review'];
 
   return (
     <DashboardLayout>
@@ -286,28 +456,20 @@ export default function SubmissionForm() {
         </Button>
 
         <h1 className="mb-2 font-display text-3xl font-bold">
-          {existingSubmission ? 'Update' : 'Submit'} Your <span className="text-gradient-gold">Application</span>
+          Your <span className="text-gradient-gold">Application</span>
         </h1>
-        <div className="mb-6 flex items-center gap-4">
-          <p className="text-muted-foreground">Complete Sections A & B to finalize.</p>
-          {submissionCount > 0 && (
-            <span className="text-xs text-muted-foreground bg-secondary px-2 py-1 rounded">
-              Submission {submissionCount}/3 {isLocked && '(LOCKED)'}
-            </span>
-          )}
-        </div>
+        <p className="mb-6 text-muted-foreground">Complete all sections to finalize. Your progress is saved automatically.</p>
 
-        {/* Step indicators */}
         <div className="mb-8 flex gap-2">
-          {['section_a', 'section_b', 'payment', 'review'].map((s, i) => (
-            <div key={s} className={`flex-1 h-2 rounded-full ${step === s ? 'bg-primary' : i < ['section_a', 'section_b', 'payment', 'review'].indexOf(step) ? 'bg-success' : 'bg-secondary'}`} />
+          {steps.map((s, i) => (
+            <div key={s} className={`flex-1 h-2 rounded-full ${step === s ? 'bg-primary' : i < steps.indexOf(step) ? 'bg-success' : 'bg-secondary'}`} />
           ))}
         </div>
 
         {step === 'section_a' && (
           <form onSubmit={handleSectionA} className="space-y-6">
             <Card className="glass-card">
-              <CardHeader><CardTitle className="font-display">Section A: Applicant Information</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="font-display">Applicant Information</CardTitle></CardHeader>
               <CardContent className="grid gap-4 md:grid-cols-2">
                 <div>
                   <Label>Full Name *</Label>
@@ -315,7 +477,8 @@ export default function SubmissionForm() {
                 </div>
                 <div>
                   <Label>Email *</Label>
-                  <Input required type="email" value={form.nominator_email} onChange={e => updateForm('nominator_email', e.target.value)} className="mt-1.5 bg-secondary" />
+                  <Input required type="email" value={form.nominator_email} readOnly className="mt-1.5 bg-secondary/50 cursor-not-allowed" />
+                  <p className="text-xs text-muted-foreground mt-1">Auto-filled from your account</p>
                 </div>
                 <div>
                   <Label>Phone</Label>
@@ -332,33 +495,63 @@ export default function SubmissionForm() {
             </Card>
 
             <Card className="glass-card">
-              <CardHeader><CardTitle className="font-display">School/Organization</CardTitle></CardHeader>
-              <CardContent className="grid gap-4 md:grid-cols-2">
-                <div className="md:col-span-2">
-                  <Label>School/Organization Name *</Label>
-                  <Input required value={form.school_name} onChange={e => updateForm('school_name', e.target.value)} className="mt-1.5 bg-secondary" />
+              <CardHeader><CardTitle className="font-display">School / Organisation</CardTitle></CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="md:col-span-2">
+                    <Label>School/Organisation Name *</Label>
+                    <Input required value={form.school_name} onChange={e => updateForm('school_name', e.target.value)} className="mt-1.5 bg-secondary" />
+                  </div>
+                  <div>
+                    <Label>City *</Label>
+                    <Input required value={form.school_city} onChange={e => updateForm('school_city', e.target.value)} className="mt-1.5 bg-secondary" />
+                  </div>
+                  <div>
+                    <Label>Country *</Label>
+                    <Input required value={form.school_country} readOnly className="mt-1.5 bg-secondary/50 cursor-not-allowed" />
+                    <p className="text-xs text-muted-foreground mt-1">From your profile</p>
+                  </div>
+                  <div>
+                    <Label>Institution Type *</Label>
+                    <Select value={form.institution_type} onValueChange={v => updateForm('institution_type', v)}>
+                      <SelectTrigger className="mt-1.5 bg-secondary"><SelectValue placeholder="Select type" /></SelectTrigger>
+                      <SelectContent>{INSTITUTION_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Institution Size</Label>
+                    <Select value={form.institution_size} onValueChange={v => updateForm('institution_size', v)}>
+                      <SelectTrigger className="mt-1.5 bg-secondary"><SelectValue placeholder="Select size" /></SelectTrigger>
+                      <SelectContent>{INSTITUTION_SIZES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
                 </div>
-                <div>
-                  <Label>City *</Label>
-                  <Input required value={form.school_city} onChange={e => updateForm('school_city', e.target.value)} className="mt-1.5 bg-secondary" />
-                </div>
-                <div>
-                  <Label>Country *</Label>
-                  <Input required value={form.school_country} onChange={e => updateForm('school_country', e.target.value)} className="mt-1.5 bg-secondary" />
-                </div>
-                <div>
-                  <Label>Institution Type</Label>
-                  <Select value={form.institution_type} onValueChange={v => updateForm('institution_type', v)}>
-                    <SelectTrigger className="mt-1.5 bg-secondary"><SelectValue placeholder="Select type" /></SelectTrigger>
-                    <SelectContent>{INSTITUTION_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>Institution Size</Label>
-                  <Select value={form.institution_size} onValueChange={v => updateForm('institution_size', v)}>
-                    <SelectTrigger className="mt-1.5 bg-secondary"><SelectValue placeholder="Select size" /></SelectTrigger>
-                    <SelectContent>{INSTITUTION_SIZES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-                  </Select>
+
+                <div className="border-t border-border pt-4">
+                  <Label className="text-base font-semibold">Registration Documents *</Label>
+                  <p className="text-xs text-muted-foreground mb-3">Upload your school/organisation registration certificate or proof of establishment.</p>
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {orgFiles.map((file, i) => (
+                      <div key={i} className="flex items-center gap-2 bg-secondary rounded-lg px-3 py-2 text-sm">
+                        <FileText className="h-4 w-4 text-primary" />
+                        <span className="max-w-[150px] truncate">{file.name}</span>
+                        <button onClick={() => setOrgFiles(prev => prev.filter((_, idx) => idx !== i))} className="text-muted-foreground hover:text-destructive"><X className="h-3 w-3" /></button>
+                      </div>
+                    ))}
+                    {existingDocs.filter(d => d.category === 'organization').map(doc => (
+                      <div key={doc.id} className="flex items-center gap-2 bg-success/10 rounded-lg px-3 py-2 text-sm">
+                        <FileText className="h-4 w-4 text-success" />
+                        <span className="max-w-[150px] truncate">{doc.file_name}</span>
+                      </div>
+                    ))}
+                  </div>
+                  {orgFiles.length < 3 && (
+                    <Label className="flex items-center gap-2 cursor-pointer text-sm text-primary hover:text-primary/80">
+                      <Upload className="h-4 w-4" />
+                      Upload registration document
+                      <input type="file" className="hidden" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" onChange={e => { if (e.target.files?.[0]) setOrgFiles(prev => [...prev, e.target.files![0]]); }} />
+                    </Label>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -370,26 +563,24 @@ export default function SubmissionForm() {
               </CardHeader>
               <CardContent className="space-y-3">
                 {AWARD_CATEGORIES.map(cat => (
-                  <div key={cat} className="flex items-center gap-3">
+                  <div key={cat} className="flex items-start gap-3">
                     <Checkbox
                       checked={selectedCategories.includes(cat)}
                       onCheckedChange={() => toggleCategory(cat)}
                       disabled={!selectedCategories.includes(cat) && selectedCategories.length >= 3}
+                      className="mt-0.5"
                     />
-                    <label className="text-sm cursor-pointer" onClick={() => toggleCategory(cat)}>{cat}</label>
+                    <div className="cursor-pointer" onClick={() => toggleCategory(cat)}>
+                      <p className="text-sm font-medium">{cat}</p>
+                      <p className="text-xs text-muted-foreground">{CATEGORY_DOCUMENTS[cat]?.label}</p>
+                    </div>
                   </div>
                 ))}
               </CardContent>
             </Card>
 
             <Card className="glass-card">
-              <CardHeader><CardTitle className="font-display">Nomination Details</CardTitle></CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label>Nomination Statement * (max 600 characters)</Label>
-                  <Textarea required maxLength={600} value={form.nomination_statement} onChange={e => updateForm('nomination_statement', e.target.value)} className="mt-1.5 min-h-[120px] bg-secondary" />
-                  <p className="mt-1 text-xs text-muted-foreground">{form.nomination_statement.length}/600</p>
-                </div>
+              <CardContent className="pt-6 space-y-4">
                 <div>
                   <Label>Past Awards (Optional)</Label>
                   <Input value={form.past_awards} onChange={e => updateForm('past_awards', e.target.value)} className="mt-1.5 bg-secondary" />
@@ -407,55 +598,94 @@ export default function SubmissionForm() {
               </CardContent>
             </Card>
 
-            <Button type="submit" className="w-full bg-gradient-gold text-lg font-semibold py-6" disabled={isSubmitting || isLocked}>
-              {isLocked ? 'Submissions Locked (3/3)' : isSubmitting ? 'Saving...' : 'Save & Continue to Section B'}
+            <Button type="submit" className="w-full bg-gradient-gold text-lg font-semibold py-6" disabled={isSubmitting}>
+              {isSubmitting ? 'Saving...' : 'Save & Continue to Nominations'}
             </Button>
           </form>
+        )}
+
+        {step === 'nominations' && (
+          <div className="space-y-6">
+            <Card className="glass-card">
+              <CardHeader>
+                <CardTitle className="font-display">Nomination Statements</CardTitle>
+                <p className="text-sm text-muted-foreground">Write a nomination statement for each selected category (max 600 characters each).</p>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {selectedCategories.map((cat, i) => (
+                  <div key={cat} className="space-y-2">
+                    <Label className="text-sm font-semibold">Category {i + 1}: {cat}</Label>
+                    <Textarea
+                      required
+                      maxLength={600}
+                      value={nominationStatements[cat] || ''}
+                      onChange={e => setNominationStatements(prev => ({ ...prev, [cat]: e.target.value }))}
+                      className="min-h-[120px] bg-secondary"
+                      placeholder={`Describe why this nomination deserves recognition in "${cat}"...`}
+                    />
+                    <p className="text-xs text-muted-foreground text-right">{(nominationStatements[cat] || '').length}/600</p>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+            <div className="flex gap-4">
+              <Button variant="outline" className="flex-1 border-border" onClick={() => setStep('section_a')}>Back</Button>
+              <Button className="flex-1 bg-gradient-gold font-semibold" onClick={handleNominations}>Continue to Documents</Button>
+            </div>
+          </div>
         )}
 
         {step === 'section_b' && (
           <div className="space-y-6">
             <Card className="glass-card">
               <CardHeader>
-                <CardTitle className="font-display">Section B: Supporting Documents</CardTitle>
-                <p className="text-sm text-muted-foreground">Upload up to 3 documents per category. This does not count toward your submission limit.</p>
+                <CardTitle className="font-display">Supporting Documents</CardTitle>
+                <p className="text-sm text-muted-foreground">Upload the required documents for each category. At least 2 documents per category are recommended.</p>
               </CardHeader>
-              <CardContent className="space-y-6">
-                {selectedCategories.map((cat, catIndex) => (
-                  <div key={cat} className="space-y-3">
-                    <h3 className="font-semibold text-sm">Category {catIndex + 1}: {cat}</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {(categoryFiles[cat] || []).map((file, fi) => (
-                        <div key={fi} className="flex items-center gap-2 bg-secondary rounded-lg px-3 py-2 text-sm">
-                          <FileText className="h-4 w-4 text-primary" />
-                          <span className="max-w-[150px] truncate">{file.name}</span>
-                          <button onClick={() => removeFile(cat, fi)} className="text-muted-foreground hover:text-destructive">
-                            <X className="h-3 w-3" />
-                          </button>
+              <CardContent className="space-y-8">
+                {selectedCategories.map((cat, catIndex) => {
+                  const catDocs = CATEGORY_DOCUMENTS[cat];
+                  const existingCatDocs = existingDocs.filter(d => d.category === cat);
+                  return (
+                    <div key={cat} className="space-y-3 border-b border-border pb-6 last:border-0 last:pb-0">
+                      <h3 className="font-semibold text-sm">Category {catIndex + 1}: {cat}</h3>
+                      {catDocs && (
+                        <div className="bg-secondary/50 rounded-lg p-3 text-xs text-muted-foreground space-y-1">
+                          <p className="font-medium text-foreground">Required documents:</p>
+                          {catDocs.docs.map((d, i) => (
+                            <p key={i}>• {d}</p>
+                          ))}
                         </div>
-                      ))}
+                      )}
+                      <div className="flex flex-wrap gap-2">
+                        {existingCatDocs.map(doc => (
+                          <div key={doc.id} className="flex items-center gap-2 bg-success/10 rounded-lg px-3 py-2 text-sm">
+                            <FileText className="h-4 w-4 text-success" />
+                            <span className="max-w-[150px] truncate">{doc.file_name}</span>
+                          </div>
+                        ))}
+                        {(categoryFiles[cat] || []).map((file, fi) => (
+                          <div key={fi} className="flex items-center gap-2 bg-secondary rounded-lg px-3 py-2 text-sm">
+                            <FileText className="h-4 w-4 text-primary" />
+                            <span className="max-w-[150px] truncate">{file.name}</span>
+                            <button onClick={() => removeFile(cat, fi)} className="text-muted-foreground hover:text-destructive"><X className="h-3 w-3" /></button>
+                          </div>
+                        ))}
+                      </div>
+                      {((categoryFiles[cat]?.length || 0) + existingCatDocs.length) < 3 && (
+                        <Label className="flex items-center gap-2 cursor-pointer text-sm text-primary hover:text-primary/80">
+                          <Upload className="h-4 w-4" />
+                          Upload document ({(categoryFiles[cat]?.length || 0) + existingCatDocs.length}/3)
+                          <input type="file" className="hidden" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.xls,.xlsx,.csv" onChange={e => handleFileChange(cat, e.target.files)} />
+                        </Label>
+                      )}
                     </div>
-                    {(categoryFiles[cat]?.length || 0) < 3 && (
-                      <Label className="flex items-center gap-2 cursor-pointer text-sm text-primary hover:text-primary/80">
-                        <Upload className="h-4 w-4" />
-                        Upload document ({(categoryFiles[cat]?.length || 0)}/3)
-                        <input
-                          type="file"
-                          className="hidden"
-                          accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.xls,.xlsx"
-                          onChange={e => handleFileChange(cat, e.target.files)}
-                        />
-                      </Label>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </CardContent>
             </Card>
-
             <div className="flex gap-4">
-              <Button variant="outline" className="flex-1 border-border" onClick={() => setStep('section_a')}>
-                Back to Section A
-              </Button>
+              <Button variant="outline" className="flex-1 border-border" onClick={() => setStep('nominations')}>Back</Button>
               <Button className="flex-1 bg-gradient-gold font-semibold" onClick={handleUploadDocuments} disabled={uploadingDocs}>
                 {uploadingDocs ? 'Uploading...' : 'Upload & Continue'}
               </Button>
@@ -467,7 +697,7 @@ export default function SubmissionForm() {
           <div className="space-y-6">
             <Card className="glass-card">
               <CardHeader>
-                <CardTitle className="font-display">Payment — KES 1</CardTitle>
+                <CardTitle className="font-display">Application Fee — KES 1</CardTitle>
                 <p className="text-sm text-muted-foreground">A nominal fee of KES 1 is required to finalize your application.</p>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -488,27 +718,18 @@ export default function SubmissionForm() {
                         <span>M-Pesa · Card · Bank Transfer</span>
                       </div>
                     </div>
-                    <Button 
-                      className="w-full bg-gradient-gold font-semibold py-6 text-lg" 
-                      onClick={handlePayment}
-                      disabled={processingPayment}
-                    >
-                      {processingPayment ? 'Connecting to Paystack...' : 'Pay KES 1 via Paystack'}
+                    <Button className="w-full bg-gradient-gold font-semibold py-6 text-lg" onClick={handlePayment} disabled={processingPayment}>
+                      {processingPayment ? 'Processing...' : 'Proceed to Payment'}
                     </Button>
-                    <p className="text-xs text-muted-foreground text-center">Secure payment powered by Paystack. Supports M-Pesa, Visa, Mastercard.</p>
+                    <p className="text-xs text-muted-foreground text-center">Secure payment. Supports M-Pesa, Visa, Mastercard.</p>
                   </div>
                 )}
               </CardContent>
             </Card>
-
             <div className="flex gap-4">
-              <Button variant="outline" className="flex-1 border-border" onClick={() => setStep('section_b')}>
-                Back to Section B
-              </Button>
+              <Button variant="outline" className="flex-1 border-border" onClick={() => setStep('section_b')}>Back</Button>
               {(paymentStatus === 'completed' || paymentStatus === 'waived') && (
-                <Button className="flex-1 bg-gradient-gold font-semibold" onClick={() => setStep('review')}>
-                  Continue to Review
-                </Button>
+                <Button className="flex-1 bg-gradient-gold font-semibold" onClick={() => setStep('review')}>Continue to Review</Button>
               )}
             </div>
           </div>
@@ -519,7 +740,7 @@ export default function SubmissionForm() {
             <Card className="glass-card">
               <CardHeader>
                 <CardTitle className="font-display">Review & Final Submission</CardTitle>
-                <p className="text-sm text-muted-foreground">Review your application details before final submission.</p>
+                <p className="text-sm text-muted-foreground">Review your application. Once submitted, you cannot make changes.</p>
               </CardHeader>
               <CardContent className="space-y-4 text-sm">
                 <div className="grid grid-cols-2 gap-3">
@@ -536,24 +757,48 @@ export default function SubmissionForm() {
                     ))}
                   </div>
                 </div>
-                <div>
-                  <span className="text-muted-foreground">Statement:</span>
-                  <p className="mt-1">{form.nomination_statement}</p>
-                </div>
+                {selectedCategories.map(cat => (
+                  <div key={cat}>
+                    <span className="text-muted-foreground font-medium">{cat}:</span>
+                    <p className="mt-1 text-xs">{nominationStatements[cat] || 'No statement'}</p>
+                  </div>
+                ))}
               </CardContent>
             </Card>
-
             <div className="flex gap-4">
-              <Button variant="outline" className="flex-1 border-border" onClick={() => setStep('payment')}>
-                Back to Payment
-              </Button>
-              <Button className="flex-1 bg-gradient-gold font-semibold text-lg py-6" onClick={handleFinalSubmit}>
-                Submit Application
-              </Button>
+              <Button variant="outline" className="flex-1 border-border" onClick={() => setStep('payment')}>Back</Button>
+              <Button className="flex-1 bg-gradient-gold font-semibold text-lg py-6" onClick={handleFinalSubmit}>Submit Application</Button>
             </div>
           </div>
         )}
+
+        {/* Document warning popup */}
+        <Dialog open={showDocWarning} onOpenChange={setShowDocWarning}>
+          <DialogContent className="bg-card border-border max-w-md">
+            <DialogHeader>
+              <DialogTitle className="font-display flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-warning" /> Missing Documents
+              </DialogTitle>
+            </DialogHeader>
+            <p className="text-sm text-muted-foreground">
+              Some categories have fewer than the recommended number of documents attached. We recommend uploading at least 2 documents per category for a stronger application.
+            </p>
+            <p className="text-sm text-muted-foreground">Would you like to continue anyway?</p>
+            <div className="flex gap-3">
+              <Button variant="outline" className="flex-1" onClick={() => setShowDocWarning(false)}>Go Back & Add More</Button>
+              <Button className="flex-1 bg-gradient-gold" onClick={proceedWithWarning}>Continue Anyway</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
+  );
+}
+
+function CheckIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
   );
 }

@@ -44,11 +44,11 @@ const App = () => (
           <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
           <Route path="/submissions" element={<ProtectedRoute allowedRoles={['submitter']}><SubmitterSubmissions /></ProtectedRoute>} />
           <Route path="/submissions/new" element={<ProtectedRoute allowedRoles={['submitter']}><SubmissionForm /></ProtectedRoute>} />
-          <Route path="/judge/submissions" element={<ProtectedRoute allowedRoles={['judge', 'panel_chair', 'global_jury']}><JudgeSubmissions /></ProtectedRoute>} />
-          <Route path="/judge/scores" element={<ProtectedRoute allowedRoles={['judge', 'panel_chair', 'global_jury']}><JudgeScores /></ProtectedRoute>} />
-          <Route path="/secretariat/submissions" element={<ProtectedRoute allowedRoles={['secretariat', 'country_coordinator', 'super_admin']}><SecretariatSubmissions /></ProtectedRoute>} />
-          <Route path="/secretariat/screening" element={<ProtectedRoute allowedRoles={['secretariat', 'country_coordinator', 'super_admin']}><SecretariatScreening /></ProtectedRoute>} />
-          <Route path="/secretariat/panels" element={<ProtectedRoute allowedRoles={['secretariat', 'country_coordinator', 'super_admin']}><SecretariatPanels /></ProtectedRoute>} />
+          <Route path="/judge/submissions" element={<ProtectedRoute allowedRoles={['judge']}><JudgeSubmissions /></ProtectedRoute>} />
+          <Route path="/judge/scores" element={<ProtectedRoute allowedRoles={['judge']}><JudgeScores /></ProtectedRoute>} />
+          <Route path="/secretariat/submissions" element={<ProtectedRoute allowedRoles={['secretariat', 'country_representative', 'super_admin']}><SecretariatSubmissions /></ProtectedRoute>} />
+          <Route path="/secretariat/screening" element={<ProtectedRoute allowedRoles={['secretariat', 'country_representative', 'super_admin']}><SecretariatScreening /></ProtectedRoute>} />
+          <Route path="/secretariat/panels" element={<ProtectedRoute allowedRoles={['secretariat', 'country_representative', 'super_admin']}><SecretariatPanels /></ProtectedRoute>} />
           <Route path="/secretariat/routing" element={<ProtectedRoute allowedRoles={['secretariat', 'super_admin']}><SecretariatRouting /></ProtectedRoute>} />
           <Route path="/secretariat/judges" element={<ProtectedRoute allowedRoles={['secretariat', 'super_admin']}><SecretariatJudges /></ProtectedRoute>} />
           <Route path="/secretariat/scores" element={<ProtectedRoute allowedRoles={['secretariat', 'super_admin']}><SecretariatScores /></ProtectedRoute>} />

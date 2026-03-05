@@ -10,6 +10,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 export default function SubmitterDashboard() {
   const { user, profile } = useAuth();
   const [stats, setStats] = useState({ total: 0, submitted: 0, approved: 0 });
+  const [hasSubmitted, setHasSubmitted] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -21,9 +22,11 @@ export default function SubmitterDashboard() {
       if (data) {
         setStats({
           total: data.length,
-          submitted: data.filter(s => s.status === 'submitted').length,
+          submitted: data.filter(s => s.status !== 'draft').length,
           approved: data.filter(s => s.approval_status === 'approved').length,
         });
+        // Check if any non-draft submission exists
+        setHasSubmitted(data.some(s => s.status !== 'draft'));
       }
     };
     fetchStats();
@@ -36,80 +39,12 @@ export default function SubmitterDashboard() {
   ];
 
   const winnerBenefits = [
-    {
-      id: 'certificate',
-      icon: BadgeCheck,
-      title: '1. Official TEGA Winner Digital Certificate',
-      items: [
-        'Personalized, high-resolution downloadable certificate',
-        'Signed and digitally authenticated',
-        'Category and award level clearly indicated (Global / Regional / National)',
-        'Unique verification ID for authenticity confirmation',
-      ],
-      suitable: ['Website display', 'LinkedIn profiles', 'Institutional communication', 'Ministry submissions', 'Marketing materials'],
-      note: 'Certificates are delivered within 7 days after the awards gala.',
-    },
-    {
-      id: 'trophy',
-      icon: Trophy,
-      title: '2. Premium Physical Trophy (Shipped)',
-      items: [
-        'Custom-engraved winner name',
-        'Award category inscribed',
-        'Award level clearly stated',
-        'Year of award',
-        'Official TEGA branding',
-      ],
-      note: 'Trophies are securely packaged and shipped internationally. Estimated delivery: 2–4 weeks depending on country location. Shipping costs are covered under the winner package.',
-    },
-    {
-      id: 'media',
-      icon: Globe,
-      title: '3. Global Recognition & Media Exposure',
-      items: [
-        'Featured on the official TEGA website',
-        'Highlighted on TEGA social media platforms',
-        'Included in the official TEGA Winners Directory',
-        'Announced during the virtual awards gala',
-        'Included in post-event press releases (where applicable)',
-      ],
-      enhances: ['Institutional credibility', 'Investor confidence', 'Ministry recognition', 'Community trust'],
-    },
-    {
-      id: 'badge',
-      icon: Medal,
-      title: '4. Official Winner Badge (Digital Use License)',
-      items: [
-        'School websites',
-        'Email signatures',
-        'Prospectuses',
-        'Institutional banners',
-        'Social media profiles',
-      ],
-      note: 'Usage is subject to brand compliance guidelines.',
-    },
-    {
-      id: 'gala',
-      icon: Mic,
-      title: '5. Global Awards Ceremony Recognition',
-      items: [
-        'Formally announced during the live virtual gala',
-        'Impact story highlighted',
-        'Formal commendation from the judging panel',
-        'Selected winners may be invited to give brief acceptance remarks',
-      ],
-    },
-    {
-      id: 'legacy',
-      icon: BookOpen,
-      title: '6. Long-Term Legacy Listing',
-      items: [
-        'Permanently listed in the TEGA Global Impact Registry',
-        'Historical recognition',
-        'Institutional prestige',
-        'Public verification of award status',
-      ],
-    },
+    { id: 'certificate', icon: BadgeCheck, title: '1. Official TEGA Winner Digital Certificate', items: ['Personalized, high-resolution downloadable certificate', 'Signed and digitally authenticated', 'Category and award level clearly indicated (Global / Regional / National)', 'Unique verification ID for authenticity confirmation'], suitable: ['Website display', 'LinkedIn profiles', 'Institutional communication', 'Ministry submissions', 'Marketing materials'], note: 'Certificates are delivered within 7 days after the awards gala.' },
+    { id: 'trophy', icon: Trophy, title: '2. Premium Physical Trophy (Shipped)', items: ['Custom-engraved winner name', 'Award category inscribed', 'Award level clearly stated', 'Year of award', 'Official TEGA branding'], note: 'Trophies are securely packaged and shipped internationally. Estimated delivery: 2–4 weeks. Shipping costs are covered.' },
+    { id: 'media', icon: Globe, title: '3. Global Recognition & Media Exposure', items: ['Featured on the official TEGA website', 'Highlighted on TEGA social media platforms', 'Included in the official TEGA Winners Directory', 'Announced during the virtual awards gala', 'Included in post-event press releases'], enhances: ['Institutional credibility', 'Investor confidence', 'Ministry recognition', 'Community trust'] },
+    { id: 'badge', icon: Medal, title: '4. Official Winner Badge (Digital Use License)', items: ['School websites', 'Email signatures', 'Prospectuses', 'Institutional banners', 'Social media profiles'], note: 'Usage is subject to brand compliance guidelines.' },
+    { id: 'gala', icon: Mic, title: '5. Global Awards Ceremony Recognition', items: ['Formally announced during the live virtual gala', 'Impact story highlighted', 'Formal commendation from the judging panel', 'Selected winners may give brief acceptance remarks'] },
+    { id: 'legacy', icon: BookOpen, title: '6. Long-Term Legacy Listing', items: ['Permanently listed in the TEGA Global Impact Registry', 'Historical recognition', 'Institutional prestige', 'Public verification of award status'] },
   ];
 
   return (
@@ -121,12 +56,14 @@ export default function SubmitterDashboard() {
           </h1>
           <p className="mt-1 text-muted-foreground">Manage your TEGA award applications</p>
         </div>
-        <Link to="/submissions/new">
-          <Button className="bg-gradient-gold gap-2 font-semibold">
-            <Award className="h-4 w-4" />
-            New Application
-          </Button>
-        </Link>
+        {!hasSubmitted && (
+          <Link to="/submissions/new">
+            <Button className="bg-gradient-gold gap-2 font-semibold">
+              <Award className="h-4 w-4" />
+              New Application
+            </Button>
+          </Link>
+        )}
       </div>
 
       <div className="grid gap-6 md:grid-cols-3">
@@ -204,16 +141,13 @@ export default function SubmitterDashboard() {
                         </div>
                       </div>
                     )}
-                    {benefit.note && (
-                      <p className="ml-8 mt-3 text-xs text-muted-foreground italic">{benefit.note}</p>
-                    )}
+                    {benefit.note && <p className="ml-8 mt-3 text-xs text-muted-foreground italic">{benefit.note}</p>}
                   </AccordionContent>
                 </AccordionItem>
               );
             })}
           </Accordion>
 
-          {/* Additional Recognition */}
           <div className="mt-6 rounded-lg border border-border bg-muted/30 p-4">
             <h4 className="font-semibold text-sm flex items-center gap-2 mb-2">
               <Star className="h-4 w-4 text-primary" />
@@ -221,12 +155,7 @@ export default function SubmitterDashboard() {
             </h4>
             <p className="text-xs text-muted-foreground mb-2">Depending on category and level:</p>
             <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-              {[
-                'Special Commendation Certificates',
-                'Innovation Spotlight Feature',
-                'Invitation to TEGA Advisory Roundtables',
-                'Future Judging Panel Consideration',
-              ].map((item, i) => (
+              {['Special Commendation Certificates', 'Innovation Spotlight Feature', 'Invitation to TEGA Advisory Roundtables', 'Future Judging Panel Consideration'].map((item, i) => (
                 <li key={i} className="flex items-center gap-2 text-xs text-muted-foreground">
                   <CheckCircle className="h-3 w-3 text-success shrink-0" />
                   {item}

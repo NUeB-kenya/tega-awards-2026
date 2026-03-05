@@ -15,9 +15,7 @@ type AudienceMode = 'role' | 'user';
 const ROLE_OPTIONS = [
   { value: 'submitter', label: 'All Applicants' },
   { value: 'judge', label: 'All Judges' },
-  { value: 'panel_chair', label: 'All Panel Chairs' },
-  { value: 'global_jury', label: 'All Global Jury' },
-  { value: 'country_coordinator', label: 'All Country Coordinators' },
+  { value: 'country_representative', label: 'All Country Representatives' },
   { value: 'secretariat', label: 'All Secretariat' },
   { value: 'admin', label: 'All Admins' },
   { value: 'super_admin', label: 'All Super Admins' },

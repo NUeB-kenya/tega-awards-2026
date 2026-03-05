@@ -79,9 +79,6 @@ export default function SubmitterSubmissions() {
             <h1 className="font-display text-3xl font-bold">My <span className="text-gradient-gold">Applications</span></h1>
             <p className="mt-1 text-muted-foreground">Track your TEGA award applications</p>
           </div>
-          <Link to="/submissions/new">
-            <Button className="bg-gradient-gold gap-2 font-semibold"><Plus className="h-4 w-4" /> New Application</Button>
-          </Link>
         </div>
 
         {loading ? (

@@ -711,6 +711,7 @@ export type Database = {
         | "panel_chair"
         | "global_jury"
         | "super_admin"
+        | "country_representative"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -847,6 +848,7 @@ export const Constants = {
         "panel_chair",
         "global_jury",
         "super_admin",
+        "country_representative",
       ],
     },
   },

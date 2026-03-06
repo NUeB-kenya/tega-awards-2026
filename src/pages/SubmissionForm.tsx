@@ -95,6 +95,7 @@ const INSTITUTION_TYPES = [
   'Public Primary School', 'Private Primary School',
   'Public Secondary School', 'Private Secondary School',
   'Public Primary & Secondary School', 'Private Primary & Secondary School',
+  'Comprehensive School(s)',
   'TVET Institution', 'University',
   'EdTech Company', 'NGO/Foundation',
   'Ministry/Government Program', 'Research Institution', 'Other',
@@ -434,15 +435,22 @@ export default function SubmissionForm() {
       return;
     }
     await supabase.from('submissions').update({ status: 'submitted', is_locked: true }).eq('id', existingSubmission.id);
+    
+    // Send confirmation email
     try {
-      await supabase.from('notifications').insert({
-        user_id: user!.id,
-        title: 'Application Submitted',
-        message: `Your TEGA Awards application for ${form.school_name} has been successfully submitted and is now in the screening queue.`,
-        type: 'success',
+      await supabase.functions.invoke('send-submission-confirmation', {
+        body: { submissionId: existingSubmission.id, userId: user!.id },
       });
     } catch {}
-    toast({ title: 'Application submitted successfully!' });
+
+    // AI content analysis (runs in background)
+    try {
+      await supabase.functions.invoke('analyze-content', {
+        body: { submissionId: existingSubmission.id, statements: nominationStatements },
+      });
+    } catch {}
+
+    toast({ title: '✅ Application submitted successfully!', description: 'You will receive a confirmation email shortly.' });
     navigate('/submissions');
   };
 

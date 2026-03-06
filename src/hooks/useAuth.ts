@@ -61,11 +61,13 @@ export function useAuth() {
   };
 
   const signUp = async (email: string, password: string, fullName: string, country?: string, phone?: string, accountType?: string) => {
+    // Both 'applicant' and 'individual' map to submitter role
+    const resolvedAccountType = accountType === 'individual' ? 'individual' : accountType || 'applicant';
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        data: { full_name: fullName, country, phone, account_type: accountType || 'applicant' },
+        data: { full_name: fullName, country, phone, account_type: resolvedAccountType },
         emailRedirectTo: window.location.origin,
       },
     });

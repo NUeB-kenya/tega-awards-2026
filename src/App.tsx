@@ -25,6 +25,7 @@ import NotificationsPage from "./pages/NotificationsPage";
 import TermsAndConditions from "./pages/TermsAndConditions";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import ProtectedRoute from "./components/ProtectedRoute";
+import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -40,6 +41,7 @@ const App = () => (
           <Route path="/auth" element={<Auth />} />
           <Route path="/terms" element={<TermsAndConditions />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
           <Route path="/submissions" element={<ProtectedRoute allowedRoles={['submitter']}><SubmitterSubmissions /></ProtectedRoute>} />

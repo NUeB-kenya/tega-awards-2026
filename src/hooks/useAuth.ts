@@ -68,7 +68,7 @@ export function useAuth() {
       password,
       options: {
         data: { full_name: fullName, country, phone, account_type: resolvedAccountType },
-        emailRedirectTo: window.location.origin,
+        emailRedirectTo: 'https://tega2026.lovable.app/dashboard',
       },
     });
     return { error };

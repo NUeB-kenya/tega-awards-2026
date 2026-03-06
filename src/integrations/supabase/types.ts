@@ -176,6 +176,69 @@ export type Database = {
           },
         ]
       }
+      judge_applications: {
+        Row: {
+          application_type: string
+          areas_of_expertise: string | null
+          created_at: string
+          current_organization: string | null
+          current_position: string | null
+          cv_path: string | null
+          full_name: string
+          highest_education: string | null
+          highest_position_held: string | null
+          id: string
+          review_notes: string | null
+          reviewed_by: string | null
+          status: string
+          updated_at: string
+          user_id: string
+          why_judge: string | null
+          work_experience: string | null
+          years_in_education: number | null
+        }
+        Insert: {
+          application_type?: string
+          areas_of_expertise?: string | null
+          created_at?: string
+          current_organization?: string | null
+          current_position?: string | null
+          cv_path?: string | null
+          full_name: string
+          highest_education?: string | null
+          highest_position_held?: string | null
+          id?: string
+          review_notes?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+          why_judge?: string | null
+          work_experience?: string | null
+          years_in_education?: number | null
+        }
+        Update: {
+          application_type?: string
+          areas_of_expertise?: string | null
+          created_at?: string
+          current_organization?: string | null
+          current_position?: string | null
+          cv_path?: string | null
+          full_name?: string
+          highest_education?: string | null
+          highest_position_held?: string | null
+          id?: string
+          review_notes?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+          why_judge?: string | null
+          work_experience?: string | null
+          years_in_education?: number | null
+        }
+        Relationships: []
+      }
       judge_assignments: {
         Row: {
           completed_at: string | null
@@ -361,8 +424,33 @@ export type Database = {
           },
         ]
       }
+      platform_settings: {
+        Row: {
+          id: string
+          key: string
+          updated_at: string
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          id?: string
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Update: {
+          id?: string
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
+          account_type: string | null
           avatar_url: string | null
           country: string | null
           created_at: string
@@ -377,6 +465,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          account_type?: string | null
           avatar_url?: string | null
           country?: string | null
           created_at?: string
@@ -391,6 +480,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          account_type?: string | null
           avatar_url?: string | null
           country?: string | null
           created_at?: string
@@ -550,6 +640,7 @@ export type Database = {
           institution_type: string | null
           is_locked: boolean
           nomination_statement: string
+          nomination_statements: Json | null
           nominator_email: string
           nominator_name: string
           nominator_phone: string | null
@@ -583,6 +674,7 @@ export type Database = {
           institution_type?: string | null
           is_locked?: boolean
           nomination_statement: string
+          nomination_statements?: Json | null
           nominator_email: string
           nominator_name: string
           nominator_phone?: string | null
@@ -616,6 +708,7 @@ export type Database = {
           institution_type?: string | null
           is_locked?: boolean
           nomination_statement?: string
+          nomination_statements?: Json | null
           nominator_email?: string
           nominator_name?: string
           nominator_phone?: string | null

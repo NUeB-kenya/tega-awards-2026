@@ -315,8 +315,8 @@ export default function Auth() {
                 e.preventDefault();
                 setResetSending(true);
                 const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
-                  redirectTo: `${window.location.origin}/reset-password`,
-                });
+                   redirectTo: 'https://tega2026.lovable.app/reset-password',
+                 });
                 setResetSending(false);
                 if (error) {
                   toast({ title: 'Error', description: error.message, variant: 'destructive' });

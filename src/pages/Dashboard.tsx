@@ -14,7 +14,9 @@ export default function Dashboard() {
   const accountType = profile?.account_type || user?.user_metadata?.account_type || 'applicant';
 
   useEffect(() => {
-    if (!user || accountType === 'applicant') {
+    if (!user) { setJudgeApp(null); return; }
+    // Only fetch judge app for judge/representative account types
+    if (accountType !== 'judge' && accountType !== 'country_representative') {
       setJudgeApp(null);
       return;
     }

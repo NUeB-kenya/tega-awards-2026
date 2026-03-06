@@ -178,7 +178,7 @@ export default function SubmissionForm() {
         .limit(1);
       if (data && data.length > 0) {
         const sub = data[0];
-        if (sub.status !== 'draft' && sub.status !== 'submitted') {
+    if (sub.status !== 'draft') {
           setAlreadySubmitted(true);
           return;
         }

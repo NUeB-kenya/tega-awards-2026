@@ -24,6 +24,7 @@ interface CountryOption {
 
 const SIGNUP_TYPES = [
   { value: 'applicant', label: 'School / Organisation' },
+  { value: 'individual', label: 'Individual' },
   { value: 'judge', label: 'Country Judge' },
   { value: 'country_representative', label: 'Country Representative' },
 ];
@@ -49,6 +50,9 @@ export default function Auth() {
   const tapCountRef = useRef(0);
   const tapTimerRef = useRef<ReturnType<typeof setTimeout>>();
   const [showAdminLogin, setShowAdminLogin] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetSending, setResetSending] = useState(false);
 
   useEffect(() => {
     supabase.from('countries').select('id, name, phone_code, flag_emoji').order('name').then(({ data }) => {
@@ -151,6 +155,13 @@ export default function Auth() {
                   <Button type="submit" className="w-full bg-gradient-gold font-semibold" disabled={isLoading}>
                     {isLoading ? 'Signing in...' : 'Sign In'}
                   </Button>
+                  <button
+                    type="button"
+                    onClick={() => setShowForgotPassword(true)}
+                    className="w-full text-center text-sm text-primary hover:text-primary/80 underline mt-2"
+                  >
+                    Forgot Password?
+                  </button>
                 </form>
               </TabsContent>
 
@@ -290,6 +301,45 @@ export default function Auth() {
       >
         <img src={tegaLogo} alt="" className="h-8 w-auto max-w-[80px] object-contain" />
       </div>
+
+      {/* Forgot Password Dialog */}
+      {showForgotPassword && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <Card className="glass-card w-full max-w-sm glow-gold">
+            <CardHeader>
+              <CardTitle className="font-display text-xl">Reset Password</CardTitle>
+              <CardDescription>Enter your email to receive a password reset link.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={async (e) => {
+                e.preventDefault();
+                setResetSending(true);
+                const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+                  redirectTo: `${window.location.origin}/reset-password`,
+                });
+                setResetSending(false);
+                if (error) {
+                  toast({ title: 'Error', description: error.message, variant: 'destructive' });
+                } else {
+                  toast({ title: 'Check your email', description: 'A password reset link has been sent to your email.' });
+                  setShowForgotPassword(false);
+                }
+              }} className="space-y-4">
+                <div>
+                  <Label htmlFor="reset-email">Email</Label>
+                  <Input id="reset-email" type="email" value={resetEmail} onChange={e => setResetEmail(e.target.value)} placeholder="you@example.com" required className="mt-1.5 bg-secondary border-border" />
+                </div>
+                <div className="flex gap-3">
+                  <Button type="button" variant="outline" className="flex-1" onClick={() => setShowForgotPassword(false)}>Cancel</Button>
+                  <Button type="submit" className="flex-1 bg-gradient-gold font-semibold" disabled={resetSending}>
+                    {resetSending ? 'Sending...' : 'Send Reset Link'}
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

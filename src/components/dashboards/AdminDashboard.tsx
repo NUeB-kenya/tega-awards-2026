@@ -75,8 +75,15 @@ export default function AdminDashboard() {
 
   const saveFee = async () => {
     const key = editFee.type === 'submission' ? 'submission_fee' : 'approval_fee';
-    await (supabase.from('platform_settings' as any) as any).update({ value: { amount: Number(editFee.amount), currency: editFee.currency } }).eq('key', key);
-    setFeeSettings((prev: any) => ({ ...prev, [key]: { amount: Number(editFee.amount), currency: editFee.currency } }));
+    const newValue = { amount: Number(editFee.amount), currency: editFee.currency };
+    // Use upsert: try update first, if no rows matched, insert
+    const { data: existing } = await (supabase.from('platform_settings' as any) as any).select('id').eq('key', key).maybeSingle();
+    if (existing) {
+      await (supabase.from('platform_settings' as any) as any).update({ value: newValue, updated_at: new Date().toISOString() }).eq('key', key);
+    } else {
+      await (supabase.from('platform_settings' as any) as any).insert({ key, value: newValue });
+    }
+    setFeeSettings((prev: any) => ({ ...prev, [key]: newValue }));
     setShowFeeDialog(false);
     toast({ title: 'Fee updated successfully' });
   };
@@ -84,7 +91,12 @@ export default function AdminDashboard() {
   const saveRates = async () => {
     const ratesObj: Record<string, number> = {};
     Object.entries(editRates).forEach(([k, v]) => { ratesObj[k] = Number(v); });
-    await (supabase.from('platform_settings' as any) as any).update({ value: ratesObj }).eq('key', 'exchange_rates');
+    const { data: existing } = await (supabase.from('platform_settings' as any) as any).select('id').eq('key', 'exchange_rates').maybeSingle();
+    if (existing) {
+      await (supabase.from('platform_settings' as any) as any).update({ value: ratesObj, updated_at: new Date().toISOString() }).eq('key', 'exchange_rates');
+    } else {
+      await (supabase.from('platform_settings' as any) as any).insert({ key: 'exchange_rates', value: ratesObj });
+    }
     setExchangeRates(ratesObj);
     setShowRateDialog(false);
     toast({ title: 'Exchange rates updated' });
@@ -117,13 +129,14 @@ export default function AdminDashboard() {
         <p className="mt-1 text-muted-foreground">Welcome, {profile?.full_name} · Full system overview</p>
       </div>
 
-      {/* Submission Applications */}
+      {/* Submission Applications - READ ONLY overview */}
       <div>
-        <h2 className="font-display text-lg font-semibold mb-3">📋 Submission Applications</h2>
+        <h2 className="font-display text-lg font-semibold mb-3">📋 Submissions Overview</h2>
+        <p className="text-xs text-muted-foreground mb-3">Submissions are managed by the Secretariat. Admin can view and monitor.</p>
         {renderCardGrid([
-          { label: 'Total Applications', value: stats.total, icon: FileText, color: 'text-primary', href: '/admin/submissions' },
-          { label: 'Pending Approval', value: stats.pending, icon: Clock, color: 'text-warning', href: '/admin/approvals' },
-          { label: 'Approved', value: stats.approved, icon: CheckCircle, color: 'text-success', href: '/admin/submissions' },
+          { label: 'Total Applications', value: stats.total, icon: FileText, color: 'text-primary', href: '/admin/approvals' },
+          { label: 'Pending Screening', value: stats.pending, icon: Clock, color: 'text-warning', href: '/admin/approvals' },
+          { label: 'Approved', value: stats.approved, icon: CheckCircle, color: 'text-success', href: '/admin/approvals' },
           { label: 'Declined', value: stats.declined, icon: XCircle, color: 'text-destructive', href: '/admin/approvals' },
         ])}
       </div>

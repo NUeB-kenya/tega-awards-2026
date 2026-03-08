@@ -207,7 +207,7 @@ export default function SecretariatRouting() {
                       <TableRow key={sub.id} className="border-border">
                         <TableCell className="font-bold">{i + 1}</TableCell>
                         <TableCell className="font-medium">{sub.school_name}</TableCell>
-                        <TableCell className={`font-bold ${scoreColor(sub.avgScore)}`}>{sub.avgScore ?? 'N/A'}/100</TableCell>
+                        <TableCell className={`font-bold ${scoreColor(sub.avgScore)}`}>{sub.avgScore != null ? sub.avgScore : '—'}</TableCell>
                         <TableCell><Badge className={`${sub.status === 'winner' ? 'bg-success/20 text-success' : 'bg-secondary text-muted-foreground'} border-0 text-xs`}>{sub.status}</Badge></TableCell>
                         <TableCell className="text-right">
                           {sub.status !== 'winner' && sub.avgScore >= 80 && (

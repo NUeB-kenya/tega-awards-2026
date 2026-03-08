@@ -6,12 +6,31 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
-import { Award, Users, Globe, Trophy, ArrowRight, CheckCircle, Clock, XCircle, Upload, FileText } from 'lucide-react';
+import { Award, Users, Globe, Trophy, ArrowRight, CheckCircle, Clock, XCircle, Upload, FileText, AlertTriangle } from 'lucide-react';
 
 const EDUCATION_LEVELS = [
   'Diploma', "Bachelor's Degree", "Master's Degree", 'Doctorate (PhD)', 'Post-Doctoral', 'Professional Certification', 'Other',
+];
+
+const ALL_CATEGORIES = [
+  'Global Transformational School of the Year',
+  'Global Education Innovation of the Year',
+  'Lifetime Contribution to Education Transformation',
+  'Transformational Educator of the Year',
+  'Innovative School Leader / Principal of the Year',
+  'Emerging Education Leader Award (Under 40)',
+  'Education System Leadership Award',
+  'Most Innovative School Model',
+  'Rural & Underserved Communities Impact Award',
+  'Inclusive & Equitable Learning Excellence Award',
+  'AI & Data Innovation in Education Award',
+  'Best EdTech Solution for Low-Resource Settings',
+  'STEM & Future Skills Advancement Award',
+  'Youth Education Changemaker Award',
 ];
 
 interface Props {
@@ -25,6 +44,7 @@ export default function JudgeOnboarding({ existingApplication, applicationType }
   const [step, setStep] = useState<'welcome' | 'form'>(existingApplication ? 'form' : 'welcome');
   const [submitting, setSubmitting] = useState(false);
   const [cvFile, setCvFile] = useState<File | null>(null);
+  const [coiFile, setCoiFile] = useState<File | null>(null);
 
   const roleLabel = applicationType === 'country_representative' ? 'Country Representative' : 'Country Judge';
 
@@ -38,9 +58,21 @@ export default function JudgeOnboarding({ existingApplication, applicationType }
     years_in_education: existingApplication?.years_in_education?.toString() || '',
     areas_of_expertise: existingApplication?.areas_of_expertise || '',
     why_judge: existingApplication?.why_judge || '',
+    expertise_categories: existingApplication?.expertise_categories || [],
+    has_coi: existingApplication?.has_coi || false,
+    coi_description: existingApplication?.coi_description || '',
   });
 
-  const updateField = (key: string, value: string) => setForm(p => ({ ...p, [key]: value }));
+  const updateField = (key: string, value: any) => setForm(p => ({ ...p, [key]: value }));
+
+  const toggleCategory = (cat: string) => {
+    setForm(p => ({
+      ...p,
+      expertise_categories: p.expertise_categories.includes(cat)
+        ? p.expertise_categories.filter((c: string) => c !== cat)
+        : [...p.expertise_categories, cat],
+    }));
+  };
 
   if (existingApplication?.status === 'pending') {
     return (
@@ -152,22 +184,42 @@ export default function JudgeOnboarding({ existingApplication, applicationType }
       toast({ title: 'CV Required', description: 'Please upload your CV/Resume.', variant: 'destructive' });
       return;
     }
+    if (form.expertise_categories.length < 5) {
+      toast({ title: 'Select at least 5 categories', description: 'You must choose at least 5 award categories you are qualified to evaluate.', variant: 'destructive' });
+      return;
+    }
+    if (form.has_coi && !coiFile && !existingApplication?.coi_document_path) {
+      toast({ title: 'COI document required', description: 'Please upload your Conflict of Interest declaration document.', variant: 'destructive' });
+      return;
+    }
 
     setSubmitting(true);
     let cvPath = existingApplication?.cv_path || '';
+    let coiPath = existingApplication?.coi_document_path || '';
 
     if (cvFile) {
       const filePath = `judge-applications/${user.id}/${cvFile.name}`;
       const { error: uploadError } = await supabase.storage.from('documents').upload(filePath, cvFile, { upsert: true });
       if (uploadError) {
-        toast({ title: 'Upload failed', description: uploadError.message, variant: 'destructive' });
+        toast({ title: 'CV upload failed', description: uploadError.message, variant: 'destructive' });
         setSubmitting(false);
         return;
       }
       cvPath = filePath;
     }
 
-    const payload = {
+    if (coiFile) {
+      const filePath = `judge-applications/${user.id}/coi-${coiFile.name}`;
+      const { error: uploadError } = await supabase.storage.from('documents').upload(filePath, coiFile, { upsert: true });
+      if (uploadError) {
+        toast({ title: 'COI document upload failed', description: uploadError.message, variant: 'destructive' });
+        setSubmitting(false);
+        return;
+      }
+      coiPath = filePath;
+    }
+
+    const payload: any = {
       user_id: user.id,
       application_type: applicationType,
       full_name: form.full_name.trim(),
@@ -180,6 +232,10 @@ export default function JudgeOnboarding({ existingApplication, applicationType }
       areas_of_expertise: form.areas_of_expertise.trim(),
       why_judge: form.why_judge.trim(),
       cv_path: cvPath,
+      expertise_categories: form.expertise_categories,
+      has_coi: form.has_coi,
+      coi_document_path: coiPath || null,
+      coi_description: form.coi_description.trim() || null,
       status: 'pending',
     };
 
@@ -255,6 +311,91 @@ export default function JudgeOnboarding({ existingApplication, applicationType }
         </CardContent>
       </Card>
 
+      {/* Category Selection */}
+      <Card className="glass-card">
+        <CardHeader>
+          <CardTitle className="font-display">Categories You Can Evaluate *</CardTitle>
+          <p className="text-sm text-muted-foreground">Select at least 5 award categories you are qualified to judge. ({form.expertise_categories.length}/14 selected)</p>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {ALL_CATEGORIES.map(cat => (
+              <label key={cat} className={`flex items-start gap-3 rounded-lg p-3 cursor-pointer transition-colors ${
+                form.expertise_categories.includes(cat) ? 'bg-primary/10 border border-primary/30' : 'bg-secondary/50 border border-transparent hover:border-border'
+              }`}>
+                <Checkbox
+                  checked={form.expertise_categories.includes(cat)}
+                  onCheckedChange={() => toggleCategory(cat)}
+                  className="mt-0.5"
+                />
+                <span className="text-sm">{cat}</span>
+              </label>
+            ))}
+          </div>
+          {form.expertise_categories.length > 0 && form.expertise_categories.length < 5 && (
+            <p className="text-xs text-destructive mt-2">Please select at least 5 categories ({5 - form.expertise_categories.length} more needed)</p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* COI Declaration */}
+      <Card className="glass-card">
+        <CardHeader>
+          <CardTitle className="font-display flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5 text-warning" />
+            Conflict of Interest Declaration *
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Do you have any potential conflict of interest that could affect your impartiality as a judge?
+          </p>
+          <RadioGroup value={form.has_coi ? 'yes' : 'no'} onValueChange={v => updateField('has_coi', v === 'yes')}>
+            <div className="flex items-center gap-2">
+              <RadioGroupItem value="no" />
+              <Label>No — I have no conflicts of interest</Label>
+            </div>
+            <div className="flex items-center gap-2">
+              <RadioGroupItem value="yes" />
+              <Label>Yes — I have a potential conflict of interest</Label>
+            </div>
+          </RadioGroup>
+
+          {form.has_coi && (
+            <div className="space-y-3 border-t border-border pt-4">
+              <div>
+                <Label>Describe the conflict of interest</Label>
+                <Textarea value={form.coi_description} onChange={e => updateField('coi_description', e.target.value)}
+                  className="mt-1.5 bg-secondary" placeholder="Describe the nature of the conflict..." />
+              </div>
+              <div>
+                <Label>Upload COI Declaration Document *</Label>
+                <p className="text-xs text-muted-foreground mb-2">PDF or Word format.</p>
+                {coiFile ? (
+                  <div className="flex items-center gap-2 bg-secondary rounded-lg px-3 py-2 text-sm">
+                    <FileText className="h-4 w-4 text-warning" />
+                    <span className="truncate">{coiFile.name}</span>
+                    <button onClick={() => setCoiFile(null)} className="text-muted-foreground hover:text-destructive ml-auto">✕</button>
+                  </div>
+                ) : existingApplication?.coi_document_path ? (
+                  <div className="flex items-center gap-2 bg-secondary rounded-lg px-3 py-2 text-sm">
+                    <FileText className="h-4 w-4 text-success" />
+                    <span>COI document previously uploaded</span>
+                  </div>
+                ) : (
+                  <Label className="flex items-center gap-2 cursor-pointer text-sm text-warning hover:text-warning/80 bg-secondary rounded-lg px-3 py-3">
+                    <Upload className="h-4 w-4" />
+                    Choose COI document
+                    <input type="file" className="hidden" accept=".pdf,.doc,.docx" onChange={e => setCoiFile(e.target.files?.[0] || null)} />
+                  </Label>
+                )}
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Documents */}
       <Card className="glass-card">
         <CardHeader><CardTitle className="font-display">Documents</CardTitle></CardHeader>
         <CardContent className="space-y-4">

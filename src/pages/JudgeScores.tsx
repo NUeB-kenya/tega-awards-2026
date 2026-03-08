@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 export default function JudgeScores() {
@@ -30,18 +31,19 @@ export default function JudgeScores() {
         <h1 className="mb-2 font-display text-3xl font-bold">
           My <span className="text-gradient-gold">Scores</span>
         </h1>
-        <p className="mb-8 text-muted-foreground">Review all scores you&apos;ve given</p>
+        <p className="mb-8 text-muted-foreground">Review all scores you&apos;ve given — grouped by category</p>
 
         <Card className="glass-card overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow className="border-border">
                 <TableHead>School</TableHead>
+                <TableHead>Category</TableHead>
                 <TableHead>Impact (30%)</TableHead>
                 <TableHead>Innovation (15%)</TableHead>
                 <TableHead>Scalability (15%)</TableHead>
                 <TableHead>Equity (10%)</TableHead>
-                <TableHead>Sustainability (10%)</TableHead>
+                <TableHead>Sustain. (10%)</TableHead>
                 <TableHead>Evidence (10%)</TableHead>
                 <TableHead>Ethics (10%)</TableHead>
                 <TableHead>Overall</TableHead>
@@ -50,12 +52,19 @@ export default function JudgeScores() {
             </TableHeader>
             <TableBody>
               {loading ? (
-                <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground">Loading...</TableCell></TableRow>
+                <TableRow><TableCell colSpan={11} className="text-center text-muted-foreground">Loading...</TableCell></TableRow>
               ) : scores.length === 0 ? (
-                <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground">No scores yet</TableCell></TableRow>
+                <TableRow><TableCell colSpan={11} className="text-center text-muted-foreground">No scores yet</TableCell></TableRow>
               ) : scores.map((score) => (
                 <TableRow key={score.id} className="border-border">
                   <TableCell className="font-medium">{(score.submissions as any)?.school_name || 'N/A'}</TableCell>
+                  <TableCell>
+                    {score.category_name ? (
+                      <Badge variant="outline" className="border-border text-[10px]">{score.category_name.length > 25 ? score.category_name.slice(0, 25) + '…' : score.category_name}</Badge>
+                    ) : (
+                      <span className="text-muted-foreground text-xs">General</span>
+                    )}
+                  </TableCell>
                   <TableCell>{score.impact_score}</TableCell>
                   <TableCell>{score.innovation_score}</TableCell>
                   <TableCell>{score.scalability_score}</TableCell>
@@ -64,7 +73,7 @@ export default function JudgeScores() {
                   <TableCell>{score.criterion_evidence ?? '-'}</TableCell>
                   <TableCell>{score.criterion_ethics ?? '-'}</TableCell>
                   <TableCell className="font-semibold text-primary">{score.overall_score}</TableCell>
-                  <TableCell className="text-muted-foreground">{new Date(score.created_at).toLocaleDateString()}</TableCell>
+                  <TableCell className="text-muted-foreground text-xs">{new Date(score.created_at).toLocaleDateString()}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

@@ -14,6 +14,69 @@ export type Database = {
   }
   public: {
     Tables: {
+      application_rankings: {
+        Row: {
+          category_id: number | null
+          continent: string | null
+          continental_rank: number | null
+          country_id: string | null
+          country_rank: number | null
+          final_score: number | null
+          global_rank: number | null
+          id: string
+          region_id: string | null
+          regional_rank: number | null
+          submission_id: string
+          tier_level: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          category_id?: number | null
+          continent?: string | null
+          continental_rank?: number | null
+          country_id?: string | null
+          country_rank?: number | null
+          final_score?: number | null
+          global_rank?: number | null
+          id?: string
+          region_id?: string | null
+          regional_rank?: number | null
+          submission_id: string
+          tier_level?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          category_id?: number | null
+          continent?: string | null
+          continental_rank?: number | null
+          country_id?: string | null
+          country_rank?: number | null
+          final_score?: number | null
+          global_rank?: number | null
+          id?: string
+          region_id?: string | null
+          regional_rank?: number | null
+          submission_id?: string
+          tier_level?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "application_rankings_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "application_rankings_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_logs: {
         Row: {
           action_type: string
@@ -180,11 +243,15 @@ export type Database = {
         Row: {
           application_type: string
           areas_of_expertise: string | null
+          coi_description: string | null
+          coi_document_path: string | null
           created_at: string
           current_organization: string | null
           current_position: string | null
           cv_path: string | null
+          expertise_categories: string[] | null
           full_name: string
+          has_coi: boolean | null
           highest_education: string | null
           highest_position_held: string | null
           id: string
@@ -200,11 +267,15 @@ export type Database = {
         Insert: {
           application_type?: string
           areas_of_expertise?: string | null
+          coi_description?: string | null
+          coi_document_path?: string | null
           created_at?: string
           current_organization?: string | null
           current_position?: string | null
           cv_path?: string | null
+          expertise_categories?: string[] | null
           full_name: string
+          has_coi?: boolean | null
           highest_education?: string | null
           highest_position_held?: string | null
           id?: string
@@ -220,11 +291,15 @@ export type Database = {
         Update: {
           application_type?: string
           areas_of_expertise?: string | null
+          coi_description?: string | null
+          coi_document_path?: string | null
           created_at?: string
           current_organization?: string | null
           current_position?: string | null
           cv_path?: string | null
+          expertise_categories?: string[] | null
           full_name?: string
+          has_coi?: boolean | null
           highest_education?: string | null
           highest_position_held?: string | null
           id?: string
@@ -451,6 +526,7 @@ export type Database = {
       profiles: {
         Row: {
           account_type: string | null
+          application_number: number | null
           avatar_url: string | null
           country: string | null
           created_at: string
@@ -466,6 +542,7 @@ export type Database = {
         }
         Insert: {
           account_type?: string | null
+          application_number?: number | null
           avatar_url?: string | null
           country?: string | null
           created_at?: string
@@ -481,6 +558,7 @@ export type Database = {
         }
         Update: {
           account_type?: string | null
+          application_number?: number | null
           avatar_url?: string | null
           country?: string | null
           created_at?: string
@@ -516,6 +594,7 @@ export type Database = {
       }
       scores: {
         Row: {
+          category_name: string | null
           comments: string | null
           created_at: string
           criterion_equity: number | null
@@ -536,6 +615,7 @@ export type Database = {
           verification_source: string | null
         }
         Insert: {
+          category_name?: string | null
           comments?: string | null
           created_at?: string
           criterion_equity?: number | null
@@ -556,6 +636,7 @@ export type Database = {
           verification_source?: string | null
         }
         Update: {
+          category_name?: string | null
           comments?: string | null
           created_at?: string
           criterion_equity?: number | null

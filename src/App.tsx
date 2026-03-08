@@ -26,6 +26,7 @@ import TermsAndConditions from "./pages/TermsAndConditions";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ResetPassword from "./pages/ResetPassword";
+import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -60,6 +61,7 @@ const App = () => (
           <Route path="/admin/submissions" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><SecretariatSubmissions /></ProtectedRoute>} />
           <Route path="/admin/messaging" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><AdminMessaging /></ProtectedRoute>} />
           <Route path="/admin/finance" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><AdminFinance /></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

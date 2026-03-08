@@ -49,7 +49,7 @@ export default function SecretariatDashboard() {
     { label: 'Assigned to Judges', value: stats.assigned, icon: Layers, color: 'text-accent', href: '/secretariat/panels' },
     { label: 'Active Judges', value: stats.judges, icon: Users, color: 'text-success', href: '/secretariat/judges' },
     { label: 'Scores Given', value: stats.scores, icon: Star, color: 'text-warning', href: '/secretariat/scores' },
-    { label: 'Panels', value: stats.panels, icon: Layers, color: 'text-primary', href: '/secretariat/panels' },
+    { label: 'Judge Groups', value: stats.panels, icon: Layers, color: 'text-primary', href: '/secretariat/panels' },
     { label: 'Applicants', value: stats.applicants, icon: FileText, color: 'text-muted-foreground', href: '/secretariat/users' },
   ];
 

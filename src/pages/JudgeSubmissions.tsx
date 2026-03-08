@@ -484,32 +484,35 @@ export default function JudgeSubmissions() {
                           )}
                         </div>
                         <div className="flex items-center gap-2">
-                          {!isEligibleForScoring && (
-                            <Badge className="bg-warning/20 text-warning border-0">View only</Badge>
-                          )}
-                          {isAssignedToOther && (
-                            <Badge className="bg-warning/20 text-warning border-0 gap-1">
-                              <Lock className="h-3 w-3" /> Verification ongoing
+                          {isAssignedToOther ? (
+                            <Badge className="bg-destructive/20 text-destructive border-0 gap-1">
+                              <Lock className="h-3 w-3" /> Assigned to another judge
                             </Badge>
-                          )}
-                          {allScored && (
-                            <Badge className="bg-success/20 text-success border-0">All scored</Badge>
-                          )}
-                          <Button variant="outline" size="sm" className="gap-1" onClick={() => setViewingId(sub.id)}>
-                            <Eye className="h-3.5 w-3.5" /> View
-                          </Button>
-                          <Button variant="outline" size="sm" className="gap-1" onClick={() => viewDocuments(sub.id)}>
-                            <FileText className="h-3.5 w-3.5" /> Docs
-                          </Button>
-                          {isEligibleForScoring && !isAssignedToOther && !isAssignedToMe && sub.status !== 'scored' && (
-                            <Button size="sm" className="bg-gradient-gold gap-1" onClick={() => pickSubmission(sub.id)}>
-                              Pick
-                            </Button>
-                          )}
-                          {isEligibleForScoring && isAssignedToMe && (
-                            <Button size="sm" className="bg-gradient-gold gap-1" onClick={() => openScoring(sub.id)}>
-                              <Star className="h-3.5 w-3.5" /> {allScored ? 'Re-score' : 'Score'}
-                            </Button>
+                          ) : (
+                            <>
+                              {!isEligibleForScoring && (
+                                <Badge className="bg-warning/20 text-warning border-0">View only</Badge>
+                              )}
+                              {allScored && (
+                                <Badge className="bg-success/20 text-success border-0">All scored</Badge>
+                              )}
+                              <Button variant="outline" size="sm" className="gap-1" onClick={() => setViewingId(sub.id)}>
+                                <Eye className="h-3.5 w-3.5" /> View
+                              </Button>
+                              <Button variant="outline" size="sm" className="gap-1" onClick={() => viewDocuments(sub.id)}>
+                                <FileText className="h-3.5 w-3.5" /> Docs
+                              </Button>
+                              {isEligibleForScoring && !isAssignedToMe && sub.status !== 'scored' && (
+                                <Button size="sm" className="bg-gradient-gold gap-1" onClick={() => pickSubmission(sub.id)}>
+                                  Pick
+                                </Button>
+                              )}
+                              {isEligibleForScoring && isAssignedToMe && (
+                                <Button size="sm" className="bg-gradient-gold gap-1" onClick={() => openScoring(sub.id)}>
+                                  <Star className="h-3.5 w-3.5" /> {allScored ? 'Re-score' : 'Score'}
+                                </Button>
+                              )}
+                            </>
                           )}
                         </div>
                       </CardContent>

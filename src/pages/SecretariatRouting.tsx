@@ -49,9 +49,9 @@ export default function SecretariatRouting() {
     return null;
   };
 
-  // Only show nationally scored submissions that actually have scores from judges
+  // Show national-stage submissions that have been scored or already promoted (winner/finalist)
   const scoredSubIds = new Set(scores.map(s => s.submission_id));
-  const national = submissions.filter(s => (s.stage || 'national') === 'national' && s.status === 'scored' && scoredSubIds.has(s.id));
+  const national = submissions.filter(s => (s.stage || 'national') === 'national' && ['scored', 'winner', 'finalist'].includes(s.status) && (scoredSubIds.has(s.id) || s.average_score != null));
   const continental = submissions.filter(s => s.stage === 'continental');
   const regional = submissions.filter(s => s.stage === 'regional');
   const globalSubs = submissions.filter(s => s.stage === 'global');

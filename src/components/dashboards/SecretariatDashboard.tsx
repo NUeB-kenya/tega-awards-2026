@@ -10,7 +10,7 @@ export default function SecretariatDashboard() {
   const [stats, setStats] = useState({
     submissions: 0, judges: 0, scores: 0, applicants: 0,
     screening: 0, screened: 0, assigned: 0, panels: 0,
-    national: 0, regional: 0, global: 0,
+    national: 0, continental: 0, regional: 0, global: 0,
   });
 
   useEffect(() => {
@@ -34,6 +34,7 @@ export default function SecretariatDashboard() {
         assigned: allSubs.filter(s => s.status === 'assigned').length,
         panels: panelsRes.count || 0,
         national: allSubs.filter(s => (s.stage || 'national') === 'national').length,
+        continental: allSubs.filter(s => s.stage === 'continental').length,
         regional: allSubs.filter(s => s.stage === 'regional').length,
         global: allSubs.filter(s => s.stage === 'global').length,
       });
@@ -91,10 +92,15 @@ export default function SecretariatDashboard() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <div className="flex-1 bg-primary/10 rounded-lg p-4 text-center">
               <p className="text-2xl font-bold text-primary">{stats.national}</p>
               <p className="text-xs text-muted-foreground">National</p>
+            </div>
+            <div className="text-muted-foreground">→</div>
+            <div className="flex-1 bg-accent/10 rounded-lg p-4 text-center">
+              <p className="text-2xl font-bold text-accent">{stats.continental}</p>
+              <p className="text-xs text-muted-foreground">Continental</p>
             </div>
             <div className="text-muted-foreground">→</div>
             <div className="flex-1 bg-warning/10 rounded-lg p-4 text-center">

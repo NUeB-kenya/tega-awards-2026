@@ -5,7 +5,7 @@ import { useNavigate, Link, useLocation } from 'react-router-dom';
 import tegaLogo from '@/assets/tega-logo.png';
 import NotificationBell from '@/components/NotificationBell';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { LogOut, LayoutDashboard, FileText, Users, Award, Settings, Shield, CheckSquare, GitBranch, Layers, Menu, X, Bell, DollarSign, MessageSquare, User } from 'lucide-react';
+import { LogOut, LayoutDashboard, FileText, Users, Award, Settings, Shield, CheckSquare, GitBranch, Layers, Menu, X, Bell, DollarSign, MessageSquare, User, Activity, Trophy, Gavel } from 'lucide-react';
 
 const navItems: Record<string, { label: string; href: string; icon: React.ElementType }[]> = {
   submitter: [
@@ -28,7 +28,9 @@ const navItems: Record<string, { label: string; href: string; icon: React.Elemen
     { label: 'Panels', href: '/secretariat/panels', icon: Layers },
     { label: 'Routing Engine', href: '/secretariat/routing', icon: GitBranch },
     { label: 'Judges', href: '/secretariat/judges', icon: Users },
+    { label: 'Judge Work Rate', href: '/secretariat/judge-work-rate', icon: Activity },
     { label: 'Scores', href: '/secretariat/scores', icon: Award },
+    { label: 'Rankings', href: '/secretariat/rankings', icon: Trophy },
     { label: 'Manage Users', href: '/secretariat/users', icon: Settings },
     { label: 'Statistics', href: '/secretariat/statistics', icon: CheckSquare },
     { label: 'Profile', href: '/profile', icon: User },
@@ -44,8 +46,10 @@ const navItems: Record<string, { label: string; href: string; icon: React.Elemen
   ],
   admin: [
     { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { label: 'Judge Applications', href: '/admin/approvals', icon: Shield },
+    { label: 'Submission Approvals', href: '/admin/approvals', icon: Shield },
+    { label: 'Judge Applications', href: '/admin/judge-applications', icon: Gavel },
     { label: 'All Submissions', href: '/admin/submissions', icon: FileText },
+    { label: 'Rankings', href: '/admin/rankings', icon: Trophy },
     { label: 'Manage Users', href: '/secretariat/users', icon: Users },
     { label: 'Finance', href: '/admin/finance', icon: DollarSign },
     { label: 'Messaging', href: '/admin/messaging', icon: MessageSquare },
@@ -54,8 +58,10 @@ const navItems: Record<string, { label: string; href: string; icon: React.Elemen
   ],
   super_admin: [
     { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { label: 'Judge Applications', href: '/admin/approvals', icon: Shield },
+    { label: 'Submission Approvals', href: '/admin/approvals', icon: Shield },
+    { label: 'Judge Applications', href: '/admin/judge-applications', icon: Gavel },
     { label: 'All Submissions', href: '/admin/submissions', icon: FileText },
+    { label: 'Rankings', href: '/admin/rankings', icon: Trophy },
     { label: 'Manage Users', href: '/secretariat/users', icon: Settings },
     { label: 'Finance', href: '/admin/finance', icon: DollarSign },
     { label: 'Messaging', href: '/admin/messaging', icon: MessageSquare },

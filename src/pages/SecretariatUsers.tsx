@@ -6,12 +6,21 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
+import { Trash2 } from 'lucide-react';
 
 export default function SecretariatUsers() {
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deleting, setDeleting] = useState<string | null>(null);
   const { toast } = useToast();
+  const { role } = useAuth();
+  const isAdmin = role === 'admin' || role === 'super_admin';
 
   const fetchUsers = async () => {
     const { data: roles } = await supabase.from('user_roles').select('id, user_id, role');
@@ -28,32 +37,43 @@ export default function SecretariatUsers() {
   useEffect(() => { fetchUsers(); }, []);
 
   const updateRole = async (userId: string, roleId: string, newRole: string, oldRole: string) => {
-    // If promoting to judge, delete their submissions (per requirements)
     if (newRole === 'judge' && oldRole === 'submitter') {
       await supabase.from('submissions').delete().eq('submitter_id', userId);
     }
-
-    // If demoting back to applicant, unlock their submissions so they can reapply
     if (newRole === 'submitter' && oldRole !== 'submitter') {
       await supabase.from('submissions').update({ is_locked: false, submission_count: 0 }).eq('submitter_id', userId);
     }
-
     const { error } = await supabase.from('user_roles').update({ role: newRole as any }).eq('id', roleId);
     if (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     } else {
       toast({ title: `Role updated to ${newRole}` });
-      // Send notification
       await supabase.from('notifications').insert({
         user_id: userId,
         title: `Role Updated to ${newRole.charAt(0).toUpperCase() + newRole.slice(1)}`,
-        message: newRole === 'judge' 
+        message: newRole === 'judge'
           ? 'You have been promoted to Judge. Log in to start reviewing applications from your region.'
           : `Your role has been updated to ${newRole}.`,
         type: 'info',
       });
       fetchUsers();
     }
+  };
+
+  const deleteUser = async (userId: string, userName: string) => {
+    setDeleting(userId);
+    try {
+      const { data, error } = await supabase.functions.invoke('delete-user', {
+        body: { user_id: userId },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast({ title: `User "${userName}" has been permanently deleted.` });
+      fetchUsers();
+    } catch (e: any) {
+      toast({ title: 'Delete failed', description: e.message, variant: 'destructive' });
+    }
+    setDeleting(null);
   };
 
   const roleBadgeColors: Record<string, string> = {
@@ -70,7 +90,7 @@ export default function SecretariatUsers() {
     <DashboardLayout>
       <div className="animate-fade-in">
         <h1 className="mb-2 font-display text-3xl font-bold">Manage <span className="text-gradient-gold">Users</span></h1>
-        <p className="mb-8 text-muted-foreground">View users, update roles (Applicant → Judge / Admin). Promoting to Judge deletes their submissions.</p>
+        <p className="mb-8 text-muted-foreground">View users, update roles (Applicant → Judge / Admin). Promoting to Judge deletes their submissions.{isAdmin && ' Admins can permanently delete user accounts.'}</p>
 
         <Card className="glass-card overflow-hidden">
           <Table>
@@ -83,11 +103,12 @@ export default function SecretariatUsers() {
                 <TableHead>Change Role</TableHead>
                 <TableHead>Credentials</TableHead>
                 <TableHead>Joined</TableHead>
+                {isAdmin && <TableHead>Actions</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
-                <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">Loading...</TableCell></TableRow>
+                <TableRow><TableCell colSpan={isAdmin ? 8 : 7} className="text-center text-muted-foreground">Loading...</TableCell></TableRow>
               ) : users.map(u => (
                 <TableRow key={u.id} className="border-border">
                   <TableCell className="font-medium">{u.full_name}</TableCell>
@@ -120,6 +141,43 @@ export default function SecretariatUsers() {
                     ) : <span className="text-xs text-muted-foreground">None</span>}
                   </TableCell>
                   <TableCell className="text-muted-foreground text-xs">{new Date(u.created_at).toLocaleDateString()}</TableCell>
+                  {isAdmin && (
+                    <TableCell>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10" disabled={deleting === u.user_id}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>⚠️ Permanently Delete User</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              You are about to <strong>permanently delete</strong> the account of <strong>{u.full_name}</strong> ({u.email}).
+                              <br /><br />
+                              This will remove:
+                              <ul className="list-disc ml-4 mt-2 space-y-1">
+                                <li>Their profile and authentication credentials</li>
+                                <li>All their submissions, scores, and rankings</li>
+                                <li>All notifications and judge assignments</li>
+                              </ul>
+                              <br />
+                              <strong className="text-destructive">This action is irreversible.</strong>
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              onClick={() => deleteUser(u.user_id, u.full_name)}
+                            >
+                              {deleting === u.user_id ? 'Deleting...' : 'Delete Permanently'}
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </TableCell>
+                  )}
                 </TableRow>
               ))}
             </TableBody>

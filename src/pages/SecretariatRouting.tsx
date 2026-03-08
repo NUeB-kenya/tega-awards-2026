@@ -57,9 +57,9 @@ export default function SecretariatRouting() {
   // Show national-stage submissions that have been scored or already promoted (winner/finalist)
   const scoredSubIds = new Set(scores.map(s => s.submission_id));
   const national = submissions.filter(s => (s.stage || 'national') === 'national' && ['scored', 'winner', 'finalist'].includes(s.status) && (scoredSubIds.has(s.id) || s.average_score != null));
-  const continental = submissions.filter(s => s.stage === 'continental');
-  const regional = submissions.filter(s => s.stage === 'regional');
-  const globalSubs = submissions.filter(s => s.stage === 'global');
+  const continental = submissions.filter(s => s.stage === 'continental').sort((a, b) => (getAvgScore(b.id) || 0) - (getAvgScore(a.id) || 0));
+  const regional = submissions.filter(s => s.stage === 'regional').sort((a, b) => (getAvgScore(b.id) || 0) - (getAvgScore(a.id) || 0));
+  const globalSubs = submissions.filter(s => s.stage === 'global').sort((a, b) => (getAvgScore(b.id) || 0) - (getAvgScore(a.id) || 0));
   const winners = submissions.filter(s => s.status === 'winner');
 
   const nationalByCountry: Record<string, any[]> = {};

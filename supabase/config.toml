@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.allocate-judges]
 verify_jwt = false
+
+[functions.delete-user]
+verify_jwt = false

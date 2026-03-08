@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { FileText, CheckCircle, Clock, XCircle, Shield, Users, Award, Gavel, DollarSign, Settings } from 'lucide-react';
+import { FileText, CheckCircle, Clock, XCircle, Shield, Users, Award, Gavel, DollarSign, Settings, Trophy } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export default function AdminDashboard() {
@@ -63,7 +63,6 @@ export default function AdminDashboard() {
         rejectedJudgeApps: judgeApps.filter((a: any) => a.status === 'rejected').length,
       });
 
-      // Load fee settings
       const settings = (settingsRes.data || []) as any[];
       settings.forEach((s: any) => {
         if (s.key === 'submission_fee') setFeeSettings((prev: any) => ({ ...prev, submission_fee: s.value }));
@@ -90,34 +89,6 @@ export default function AdminDashboard() {
     setShowRateDialog(false);
     toast({ title: 'Exchange rates updated' });
   };
-
-  const submissionCards = [
-    { label: 'Total Applications', value: stats.total, icon: FileText, color: 'text-primary', href: '/admin/submissions' },
-    { label: 'Pending Approval', value: stats.pending, icon: Clock, color: 'text-warning', href: '/admin/approvals' },
-    { label: 'Approved', value: stats.approved, icon: CheckCircle, color: 'text-success', href: '/admin/submissions' },
-    { label: 'Declined', value: stats.declined, icon: XCircle, color: 'text-destructive', href: '/admin/approvals' },
-  ];
-
-  const pipelineCards = [
-    { label: 'Paid', value: stats.paid, color: 'text-success' },
-    { label: 'Screened', value: stats.screened, color: 'text-primary' },
-    { label: 'Assigned', value: stats.assigned, color: 'text-accent' },
-    { label: 'Scored', value: stats.scored, color: 'text-warning' },
-  ];
-
-  const userCards = [
-    { label: 'Total Users', value: userStats.totalUsers, icon: Users, color: 'text-primary' },
-    { label: 'Applicants', value: userStats.applicants, icon: FileText, color: 'text-success' },
-    { label: 'Active Judges', value: userStats.judges, icon: Gavel, color: 'text-primary' },
-    { label: 'Country Representatives', value: userStats.representatives, icon: Shield, color: 'text-accent' },
-  ];
-
-  const judgeCards = [
-    { label: 'Pending Judge Apps', value: judgeStats.pendingJudgeApps, icon: Clock, color: 'text-warning' },
-    { label: 'Approved Judge Apps', value: judgeStats.approvedJudgeApps, icon: CheckCircle, color: 'text-success' },
-    { label: 'Rejected Apps', value: judgeStats.rejectedJudgeApps, icon: XCircle, color: 'text-destructive' },
-    { label: 'Secretariat + Admins', value: userStats.secretariat + userStats.admins, icon: Shield, color: 'text-destructive' },
-  ];
 
   const renderCardGrid = (cards: any[]) => (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -146,15 +117,38 @@ export default function AdminDashboard() {
         <p className="mt-1 text-muted-foreground">Welcome, {profile?.full_name} · Full system overview</p>
       </div>
 
+      {/* Submission Applications */}
       <div>
-        <h2 className="font-display text-lg font-semibold mb-3">Applications</h2>
-        {renderCardGrid(submissionCards)}
+        <h2 className="font-display text-lg font-semibold mb-3">📋 Submission Applications</h2>
+        {renderCardGrid([
+          { label: 'Total Applications', value: stats.total, icon: FileText, color: 'text-primary', href: '/admin/submissions' },
+          { label: 'Pending Approval', value: stats.pending, icon: Clock, color: 'text-warning', href: '/admin/approvals' },
+          { label: 'Approved', value: stats.approved, icon: CheckCircle, color: 'text-success', href: '/admin/submissions' },
+          { label: 'Declined', value: stats.declined, icon: XCircle, color: 'text-destructive', href: '/admin/approvals' },
+        ])}
       </div>
 
+      {/* Judge Applications - separate section */}
+      <div>
+        <h2 className="font-display text-lg font-semibold mb-3">⚖️ Judge Applications</h2>
+        {renderCardGrid([
+          { label: 'Pending Review', value: judgeStats.pendingJudgeApps, icon: Clock, color: 'text-warning', href: '/admin/judge-applications' },
+          { label: 'Approved Judges', value: judgeStats.approvedJudgeApps, icon: CheckCircle, color: 'text-success', href: '/admin/judge-applications' },
+          { label: 'Rejected', value: judgeStats.rejectedJudgeApps, icon: XCircle, color: 'text-destructive', href: '/admin/judge-applications' },
+          { label: 'Active Judges', value: judgeStats.totalJudges, icon: Gavel, color: 'text-primary' },
+        ])}
+      </div>
+
+      {/* Pipeline */}
       <div>
         <h2 className="font-display text-lg font-semibold mb-3">Pipeline</h2>
         <div className="grid gap-4 md:grid-cols-4">
-          {pipelineCards.map(c => (
+          {[
+            { label: 'Paid', value: stats.paid, color: 'text-success' },
+            { label: 'Screened', value: stats.screened, color: 'text-primary' },
+            { label: 'Assigned', value: stats.assigned, color: 'text-accent' },
+            { label: 'Scored', value: stats.scored, color: 'text-warning' },
+          ].map(c => (
             <Card key={c.label} className="glass-card">
               <CardContent className="pt-6 text-center">
                 <p className={`text-2xl font-bold ${c.color}`}>{c.value}</p>
@@ -165,14 +159,30 @@ export default function AdminDashboard() {
         </div>
       </div>
 
+      {/* Users Overview */}
       <div>
         <h2 className="font-display text-lg font-semibold mb-3">Users Overview</h2>
-        {renderCardGrid(userCards)}
+        {renderCardGrid([
+          { label: 'Total Users', value: userStats.totalUsers, icon: Users, color: 'text-primary' },
+          { label: 'Applicants', value: userStats.applicants, icon: FileText, color: 'text-success' },
+          { label: 'Country Reps', value: userStats.representatives, icon: Shield, color: 'text-accent' },
+          { label: 'Secretariat + Admins', value: userStats.secretariat + userStats.admins, icon: Settings, color: 'text-muted-foreground' },
+        ])}
       </div>
 
+      {/* Rankings Quick Link */}
       <div>
-        <h2 className="font-display text-lg font-semibold mb-3">Judge Applications</h2>
-        {renderCardGrid(judgeCards)}
+        <Link to="/admin/rankings">
+          <Card className="glass-card hover:border-primary/30 transition-colors cursor-pointer">
+            <CardContent className="pt-6 flex items-center gap-4">
+              <Trophy className="h-8 w-8 text-amber-400" />
+              <div>
+                <p className="font-display font-bold text-lg">Rankings & Leaderboard</p>
+                <p className="text-sm text-muted-foreground">View Country → Continental → Regional → Global rankings</p>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
 
       {/* Fee Management */}
@@ -215,22 +225,17 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* Edit Fee Dialog */}
+      {/* Fee Dialog */}
       <Dialog open={showFeeDialog} onOpenChange={setShowFeeDialog}>
         <DialogContent className="bg-card border-border max-w-sm">
           <DialogHeader><DialogTitle className="font-display">Edit {editFee.type === 'submission' ? 'Submission' : 'Approval'} Fee</DialogTitle></DialogHeader>
           <div className="space-y-4">
-            <div>
-              <Label>Amount</Label>
-              <Input type="number" min={0} value={editFee.amount} onChange={e => setEditFee(p => ({ ...p, amount: e.target.value }))} className="mt-1 bg-secondary" />
-            </div>
+            <div><Label>Amount</Label><Input type="number" min={0} value={editFee.amount} onChange={e => setEditFee(p => ({ ...p, amount: e.target.value }))} className="mt-1 bg-secondary" /></div>
             <div>
               <Label>Currency</Label>
               <Select value={editFee.currency} onValueChange={v => setEditFee(p => ({ ...p, currency: v }))}>
                 <SelectTrigger className="mt-1 bg-secondary"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {['KES', 'USD', 'EUR', 'GBP', 'ZAR'].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                </SelectContent>
+                <SelectContent>{['KES', 'USD', 'EUR', 'GBP', 'ZAR'].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <Button className="w-full bg-gradient-gold font-semibold" onClick={saveFee}>Save</Button>
@@ -238,16 +243,13 @@ export default function AdminDashboard() {
         </DialogContent>
       </Dialog>
 
-      {/* Edit Exchange Rates Dialog */}
+      {/* Rates Dialog */}
       <Dialog open={showRateDialog} onOpenChange={setShowRateDialog}>
         <DialogContent className="bg-card border-border max-w-sm">
           <DialogHeader><DialogTitle className="font-display">Exchange Rates</DialogTitle></DialogHeader>
           <div className="space-y-3">
             {Object.entries(editRates).map(([pair, rate]) => (
-              <div key={pair}>
-                <Label>{pair.replace('_', ' → ')}</Label>
-                <Input type="number" step="0.01" value={rate} onChange={e => setEditRates(p => ({ ...p, [pair]: e.target.value }))} className="mt-1 bg-secondary" />
-              </div>
+              <div key={pair}><Label>{pair.replace('_', ' → ')}</Label><Input type="number" step="0.01" value={rate} onChange={e => setEditRates(p => ({ ...p, [pair]: e.target.value }))} className="mt-1 bg-secondary" /></div>
             ))}
             <Button className="w-full bg-gradient-gold font-semibold" onClick={saveRates}>Save Rates</Button>
           </div>

@@ -7,12 +7,10 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
+  if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
   try {
-    const { submissionId, statements } = await req.json();
+    const { submissionId, statements, documentUrls } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY not configured');
 
@@ -30,8 +28,7 @@ serve(async (req) => {
       .limit(50);
 
     const existingTexts = (otherSubs || []).map(s => ({
-      id: s.id,
-      school: s.school_name,
+      id: s.id, school: s.school_name,
       text: s.nomination_statement,
       statements: s.nomination_statements || {},
     }));
@@ -48,13 +45,27 @@ serve(async (req) => {
       });
     }
 
-    // Cross-submission excerpts for comparison
+    // Fetch document metadata if available
+    let documentContext = '';
+    if (submissionId) {
+      const { data: docs } = await supabase
+        .from('submission_documents')
+        .select('file_name, category, file_size, mime_type, created_at')
+        .eq('submission_id', submissionId);
+      
+      if (docs?.length) {
+        documentContext = '\n\nUPLOADED DOCUMENTS:\n' + docs.map(d => 
+          `- ${d.file_name} (${d.category}, ${d.mime_type}, ${d.file_size ? Math.round(d.file_size / 1024) + 'KB' : 'unknown size'}, uploaded: ${d.created_at})`
+        ).join('\n');
+      }
+    }
+
     const crossComparisonExcerpts = existingTexts.slice(0, 20).map(s => {
       const stmts = typeof s.statements === 'object' ? Object.values(s.statements).join(' ') : '';
       return `[${s.school}]: ${(s.text + ' ' + stmts).substring(0, 300)}`;
     }).join('\n');
 
-    const systemPrompt = `You are an advanced Submission Integrity Analyzer for the TEGA (Transforming Education Global Awards) platform. You perform a comprehensive multi-layer analysis on each submission.
+    const systemPrompt = `You are an advanced Submission Integrity Analyzer for the TEGA (Transforming Education Global Awards) platform. You perform comprehensive multi-layer analysis.
 
 ANALYSIS LAYERS:
 
@@ -78,16 +89,23 @@ ANALYSIS LAYERS:
 - Check for citation fabrication (invented references)
 - Flag identical language patterns suggesting self-generated endorsements
 - Check for template/copied submission structure
+- Analyze document metadata if provided (creation timing, file patterns)
+- Flag if multiple documents appear to be from same author/template
+- Check for stock image indicators in document names
 
 4. CROSS-SUBMISSION SIMILARITY (15% weight)
 - Compare against other submissions provided below
 - Flag if similarity > 75% with any other submission
 - Detect shared narratives, project descriptions, or recycled content
 
-5. EVIDENCE QUALITY (10% weight)
+5. EVIDENCE QUALITY & OCR ANALYSIS (10% weight)
 - Calculate evidence density: measurable claims vs proof references
 - Flag low evidence density (many claims, few supporting details)
 - Check for vague vs specific impact statements
+- Analyze document count and types relative to claims made
+- Flag if documents appear insufficient for stated impact scope
+
+${documentContext}
 
 EXISTING SUBMISSIONS FOR COMPARISON:
 ${crossComparisonExcerpts || 'No other submissions available yet.'}
@@ -110,46 +128,46 @@ below 50 = integrity review required`;
           { role: 'system', content: systemPrompt },
           { role: 'user', content: `Analyze this submission:\n\n${allStatements}` },
         ],
-        tools: [
-          {
-            type: 'function',
-            function: {
-              name: 'report_integrity_analysis',
-              description: 'Report comprehensive integrity analysis results',
-              parameters: {
-                type: 'object',
-                properties: {
-                  integrity_score: { type: 'number', description: 'Overall integrity score 0-100' },
-                  plagiarism_score: { type: 'number', description: 'Plagiarism/AI risk score 0-100 (higher=more suspicious)' },
-                  impact_credibility_score: { type: 'number', description: 'Impact claim credibility 0-100 (higher=more credible)' },
-                  document_authenticity_score: { type: 'number', description: 'Content authenticity 0-100 (higher=more authentic)' },
-                  cross_similarity_score: { type: 'number', description: 'Cross-submission similarity 0-100 (higher=more similar/suspicious)' },
-                  evidence_quality_score: { type: 'number', description: 'Evidence quality 0-100 (higher=better evidence)' },
-                  ai_generated_probability: { type: 'number', description: 'Probability content is AI-generated 0-100' },
-                  buzzword_density: { type: 'string', enum: ['low', 'moderate', 'high', 'excessive'] },
-                  flags: { type: 'array', items: { type: 'string' }, description: 'List of detected issues (max 8)' },
-                  recommendations: { type: 'array', items: { type: 'string' }, description: 'Recommendations for judges (max 3)' },
-                  category_results: {
+        tools: [{
+          type: 'function',
+          function: {
+            name: 'report_integrity_analysis',
+            description: 'Report comprehensive integrity analysis results',
+            parameters: {
+              type: 'object',
+              properties: {
+                integrity_score: { type: 'number', description: 'Overall integrity score 0-100' },
+                plagiarism_score: { type: 'number', description: 'Plagiarism/AI risk score 0-100 (higher=more suspicious)' },
+                impact_credibility_score: { type: 'number', description: 'Impact claim credibility 0-100' },
+                document_authenticity_score: { type: 'number', description: 'Content authenticity 0-100' },
+                cross_similarity_score: { type: 'number', description: 'Cross-submission similarity 0-100 (higher=more suspicious)' },
+                evidence_quality_score: { type: 'number', description: 'Evidence quality 0-100' },
+                ai_generated_probability: { type: 'number', description: 'Probability content is AI-generated 0-100' },
+                buzzword_density: { type: 'string', enum: ['low', 'moderate', 'high', 'excessive'] },
+                document_flags: { type: 'array', items: { type: 'string' }, description: 'Document-specific flags (template reuse, timing, metadata)' },
+                citation_issues: { type: 'array', items: { type: 'string' }, description: 'Flagged citation/reference issues' },
+                flags: { type: 'array', items: { type: 'string' }, description: 'List of detected issues (max 10)' },
+                recommendations: { type: 'array', items: { type: 'string' }, description: 'Recommendations for judges (max 5)' },
+                category_results: {
+                  type: 'object',
+                  description: 'Per-category analysis',
+                  additionalProperties: {
                     type: 'object',
-                    description: 'Per-category analysis with score and flags',
-                    additionalProperties: {
-                      type: 'object',
-                      properties: {
-                        score: { type: 'number' },
-                        flags: { type: 'array', items: { type: 'string' } },
-                        recommendation: { type: 'string', enum: ['pass', 'review', 'alert'] },
-                      },
+                    properties: {
+                      score: { type: 'number' },
+                      flags: { type: 'array', items: { type: 'string' } },
+                      recommendation: { type: 'string', enum: ['pass', 'review', 'alert'] },
                     },
                   },
-                  overall_recommendation: { type: 'string', enum: ['pass', 'review', 'alert'] },
-                  confidence_level: { type: 'string', enum: ['low', 'medium', 'high'] },
                 },
-                required: ['integrity_score', 'plagiarism_score', 'impact_credibility_score', 'flags', 'overall_recommendation', 'confidence_level', 'ai_generated_probability'],
-                additionalProperties: false,
+                overall_recommendation: { type: 'string', enum: ['pass', 'review', 'alert'] },
+                confidence_level: { type: 'string', enum: ['low', 'medium', 'high'] },
               },
+              required: ['integrity_score', 'plagiarism_score', 'impact_credibility_score', 'flags', 'overall_recommendation', 'confidence_level', 'ai_generated_probability'],
+              additionalProperties: false,
             },
           },
-        ],
+        }],
         tool_choice: { type: 'function', function: { name: 'report_integrity_analysis' } },
       }),
     });
@@ -163,28 +181,44 @@ below 50 = integrity review required`;
         analysis = JSON.parse(toolCall.function.arguments);
       }
     } else {
-      console.error('AI gateway error:', response.status, await response.text());
+      const errStatus = response.status;
+      const errText = await response.text();
+      console.error('AI gateway error:', errStatus, errText);
+      if (errStatus === 429) {
+        return new Response(JSON.stringify({ error: 'Rate limited. Please try again later.', success: false }), {
+          status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      if (errStatus === 402) {
+        return new Response(JSON.stringify({ error: 'AI credits exhausted. Please add funds.', success: false }), {
+          status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
     }
 
-    // Store analysis results on the submission
+    // Build screening notes summary
+    const flagSummary = (analysis.flags || []).slice(0, 5).join('; ');
+    const docFlags = (analysis.document_flags || []).slice(0, 3).join('; ');
+    const screeningNotes = [
+      `AI Integrity Score: ${analysis.integrity_score}/100`,
+      `Recommendation: ${analysis.overall_recommendation?.toUpperCase()}`,
+      `AI-Gen Probability: ${analysis.ai_generated_probability || 'N/A'}%`,
+      `Buzzwords: ${analysis.buzzword_density || 'N/A'}`,
+      flagSummary ? `Flags: ${flagSummary}` : null,
+      docFlags ? `Doc Issues: ${docFlags}` : null,
+    ].filter(Boolean).join(' | ');
+
     await supabase.from('submissions').update({
-      screening_notes: `AI Integrity Score: ${analysis.integrity_score}/100 | ${analysis.overall_recommendation?.toUpperCase()} | Flags: ${(analysis.flags || []).join('; ') || 'None'}`,
+      screening_notes: screeningNotes,
     } as any).eq('id', submissionId);
 
-    // If flagged, notify secretariat
+    // Notify secretariat if flagged
     const anyFlagged = analysis.overall_recommendation !== 'pass';
     if (anyFlagged && submissionId) {
       const { data: submission } = await supabase
-        .from('submissions')
-        .select('school_name')
-        .eq('id', submissionId)
-        .single();
-
+        .from('submissions').select('school_name').eq('id', submissionId).single();
       const { data: secretariatRoles } = await supabase
-        .from('user_roles')
-        .select('user_id')
-        .eq('role', 'secretariat')
-        .limit(10);
+        .from('user_roles').select('user_id').eq('role', 'secretariat').limit(10);
 
       if (secretariatRoles) {
         const flagList = (analysis.flags || []).slice(0, 5).join('\n• ');
@@ -192,7 +226,7 @@ below 50 = integrity review required`;
           await supabase.from('notifications').insert({
             user_id: role.user_id,
             title: `⚠️ Integrity ${analysis.overall_recommendation === 'alert' ? 'Alert' : 'Review'}: ${submission?.school_name || 'Unknown'}`,
-            message: `Integrity Score: ${analysis.integrity_score}/100\nAI-Generated Probability: ${analysis.ai_generated_probability || 'N/A'}%\n\nFlags:\n• ${flagList || 'None'}\n\nConfidence: ${analysis.confidence_level}`,
+            message: `Score: ${analysis.integrity_score}/100 | AI-Gen: ${analysis.ai_generated_probability || 'N/A'}%\n\n• ${flagList || 'None'}\n\nConfidence: ${analysis.confidence_level}`,
             type: analysis.overall_recommendation === 'alert' ? 'error' : 'warning',
             link: '/secretariat/screening',
           });

@@ -334,7 +334,7 @@ export default function SubmissionForm() {
     }
     // Save nomination statements
     if (existingSubmission) {
-      supabase.from('submissions').update({ nomination_statements: nominationStatements } as any).eq('id', existingSubmission.id);
+      await supabase.from('submissions').update({ nomination_statements: nominationStatements } as any).eq('id', existingSubmission.id);
     }
     setStep('section_b');
   };

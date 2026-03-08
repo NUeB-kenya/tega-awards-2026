@@ -34,6 +34,7 @@ export default function SecretariatDashboard() {
         assigned: allSubs.filter(s => s.status === 'assigned').length,
         panels: panelsRes.count || 0,
         national: allSubs.filter(s => (s.stage || 'national') === 'national').length,
+        continental: allSubs.filter(s => s.stage === 'continental').length,
         regional: allSubs.filter(s => s.stage === 'regional').length,
         global: allSubs.filter(s => s.stage === 'global').length,
       });

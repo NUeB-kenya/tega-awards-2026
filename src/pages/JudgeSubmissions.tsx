@@ -291,13 +291,28 @@ export default function JudgeSubmissions() {
         await supabase.from('judge_assignments').update({ status: 'completed', completed_at: new Date().toISOString() })
           .eq('judge_id', user.id).eq('submission_id', scoringId);
 
-        // Auto-update submission status to 'scored'
-        await supabase.from('submissions').update({ status: 'scored' }).eq('id', scoringId);
+        // Clear deferred status and update to scored
+        const wasDeferred = targetSub.screening_notes?.startsWith('DEFERRED:');
+        await supabase.from('submissions').update({ 
+          status: 'scored',
+          screening_notes: wasDeferred ? targetSub.screening_notes?.replace('DEFERRED: ', 'RE-EVALUATED: ') : targetSub.screening_notes,
+        }).eq('id', scoringId);
 
         // Compute and store average score on submission
         const allSubScores = [...updatedScores];
         const avgScore = allSubScores.reduce((a, s) => a + (s.overall_score || ((s.impact * 3) + (s.innovation * 1.5) + (s.scalability * 1.5) + (s.equity * 1) + (s.sustainability * 1) + (s.evidence * 1) + (s.ethics * 1)) || 0), 0) / Math.max(allSubScores.length, 1);
         await supabase.from('submissions').update({ average_score: Math.round(avgScore * 100) / 100 }).eq('id', scoringId);
+
+        // Notify the secretariat member who deferred this case
+        if (wasDeferred && targetSub.screened_by) {
+          await supabase.from('notifications').insert({
+            user_id: targetSub.screened_by,
+            title: '🔄 Deferred Case Re-evaluated',
+            message: `The deferred submission "${targetSub.school_name}" has been re-scored by the judge. New average: ${Math.round(avgScore * 100) / 100}. Please review the updated scores.`,
+            type: 'info',
+            link: '/secretariat/scores',
+          });
+        }
       }
 
       // Refresh scores

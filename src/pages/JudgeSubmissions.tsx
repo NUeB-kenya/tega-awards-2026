@@ -142,10 +142,11 @@ export default function JudgeSubmissions() {
   useEffect(() => {
     if (!user) return;
     const fetchData = async () => {
+      // Include 'scored' so judges can see their completed work, and deferred (assigned with DEFERRED notes)
       const { data: subs } = await supabase
         .from('submissions')
         .select('*')
-        .in('status', ['submitted', 'paid', 'screened', 'assigned'])
+        .in('status', ['submitted', 'paid', 'screened', 'assigned', 'scored'])
         .order('created_at', { ascending: false });
       const { data: allAssignments } = await supabase.from('judge_assignments').select('*');
       const assignMap: Record<string, any> = {};

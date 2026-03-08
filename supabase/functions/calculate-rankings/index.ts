@@ -233,6 +233,12 @@ serve(async (req) => {
         if (existing) continue;
 
         // Create promoted clone
+        // Calculate parent's average score to carry forward
+        const parentScores = (allScores || []).filter(s => s.submission_id === sub.id);
+        const parentAvg = parentScores.length > 0
+          ? Math.round(parentScores.reduce((a, s) => a + (s.overall_score || 0), 0) / parentScores.length * 100) / 100
+          : sub.average_score || null;
+
         const { error } = await supabase.from('submissions').insert({
           submitter_id: sub.submitter_id,
           nominator_name: sub.nominator_name,
@@ -255,6 +261,7 @@ serve(async (req) => {
           approval_status: 'pending',
           parent_submission_id: sub.id,
           promoted_from_stage: promo.fromStage,
+          average_score: parentAvg,
         });
 
         if (!error) {

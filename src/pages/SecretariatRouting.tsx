@@ -30,10 +30,23 @@ export default function SecretariatRouting() {
 
   useEffect(() => { fetchData(); }, []);
 
+  // Get avg score: first from direct judge scores, then from stored average_score (carried from parent)
   const getAvgScore = (subId: string) => {
     const subScores = scores.filter(s => s.submission_id === subId);
-    if (subScores.length === 0) return null;
-    return Math.round(subScores.reduce((sum, s) => sum + (s.overall_score || 0), 0) / subScores.length * 10) / 10;
+    if (subScores.length > 0) {
+      return Math.round(subScores.reduce((sum, s) => sum + (s.overall_score || 0), 0) / subScores.length * 10) / 10;
+    }
+    // Fallback: use the stored average_score (carried forward on promotion)
+    const sub = submissions.find(s => s.id === subId);
+    if (sub?.average_score != null) return Math.round(sub.average_score * 10) / 10;
+    // Fallback: check parent submission's scores
+    if (sub?.parent_submission_id) {
+      const parentScores = scores.filter(s => s.submission_id === sub.parent_submission_id);
+      if (parentScores.length > 0) {
+        return Math.round(parentScores.reduce((sum, s) => sum + (s.overall_score || 0), 0) / parentScores.length * 10) / 10;
+      }
+    }
+    return null;
   };
 
   // Only show nationally scored submissions that actually have scores from judges

@@ -396,7 +396,7 @@ export default function SecretariatRouting() {
                     </TableBody>
                   </Table>
                   {eligible.length > 0 && (
-                    <p className="text-xs text-muted-foreground mt-2">★ Top 3 auto-promoted to Continental on recalculation · Select entries and click <strong>Declare Winners</strong> to officially announce</p>
+                    <p className="text-xs text-muted-foreground mt-2">★ Top 3 auto-promoted to Regional on recalculation · Select entries and click <strong>Declare Winners</strong> to officially announce</p>
                   )}
                 </CardContent>
               </Card>

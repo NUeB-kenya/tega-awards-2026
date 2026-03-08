@@ -18,7 +18,10 @@ import SecretariatJudges from "./pages/SecretariatJudges";
 import SecretariatScores from "./pages/SecretariatScores";
 import SecretariatUsers from "./pages/SecretariatUsers";
 import SecretariatStatistics from "./pages/SecretariatStatistics";
+import SecretariatJudgeWorkRate from "./pages/SecretariatJudgeWorkRate";
+import Rankings from "./pages/Rankings";
 import AdminApprovals from "./pages/AdminApprovals";
+import AdminJudgeApprovals from "./pages/AdminJudgeApprovals";
 import AdminMessaging from "./pages/AdminMessaging";
 import AdminFinance from "./pages/AdminFinance";
 import NotificationsPage from "./pages/NotificationsPage";
@@ -57,10 +60,14 @@ const App = () => (
           <Route path="/secretariat/scores" element={<ProtectedRoute allowedRoles={['secretariat', 'super_admin']}><SecretariatScores /></ProtectedRoute>} />
           <Route path="/secretariat/users" element={<ProtectedRoute allowedRoles={['secretariat', 'super_admin']}><SecretariatUsers /></ProtectedRoute>} />
           <Route path="/secretariat/statistics" element={<ProtectedRoute allowedRoles={['secretariat', 'super_admin']}><SecretariatStatistics /></ProtectedRoute>} />
+          <Route path="/secretariat/judge-work-rate" element={<ProtectedRoute allowedRoles={['secretariat', 'super_admin']}><SecretariatJudgeWorkRate /></ProtectedRoute>} />
+          <Route path="/secretariat/rankings" element={<ProtectedRoute allowedRoles={['secretariat', 'super_admin']}><Rankings /></ProtectedRoute>} />
           <Route path="/admin/approvals" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><AdminApprovals /></ProtectedRoute>} />
+          <Route path="/admin/judge-applications" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><AdminJudgeApprovals /></ProtectedRoute>} />
           <Route path="/admin/submissions" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><SecretariatSubmissions /></ProtectedRoute>} />
           <Route path="/admin/messaging" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><AdminMessaging /></ProtectedRoute>} />
           <Route path="/admin/finance" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><AdminFinance /></ProtectedRoute>} />
+          <Route path="/admin/rankings" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><Rankings /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="*" element={<NotFound />} />
         </Routes>

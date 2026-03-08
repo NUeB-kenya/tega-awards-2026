@@ -17,3 +17,9 @@ verify_jwt = false
 
 [functions.analyze-content]
 verify_jwt = false
+
+[functions.calculate-rankings]
+verify_jwt = false
+
+[functions.allocate-judges]
+verify_jwt = false

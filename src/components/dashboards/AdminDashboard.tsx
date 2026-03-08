@@ -91,7 +91,12 @@ export default function AdminDashboard() {
   const saveRates = async () => {
     const ratesObj: Record<string, number> = {};
     Object.entries(editRates).forEach(([k, v]) => { ratesObj[k] = Number(v); });
-    await (supabase.from('platform_settings' as any) as any).update({ value: ratesObj }).eq('key', 'exchange_rates');
+    const { data: existing } = await (supabase.from('platform_settings' as any) as any).select('id').eq('key', 'exchange_rates').maybeSingle();
+    if (existing) {
+      await (supabase.from('platform_settings' as any) as any).update({ value: ratesObj, updated_at: new Date().toISOString() }).eq('key', 'exchange_rates');
+    } else {
+      await (supabase.from('platform_settings' as any) as any).insert({ key: 'exchange_rates', value: ratesObj });
+    }
     setExchangeRates(ratesObj);
     setShowRateDialog(false);
     toast({ title: 'Exchange rates updated' });

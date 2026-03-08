@@ -289,6 +289,14 @@ export default function JudgeSubmissions() {
       if (allScored) {
         await supabase.from('judge_assignments').update({ status: 'completed', completed_at: new Date().toISOString() })
           .eq('judge_id', user.id).eq('submission_id', scoringId);
+
+        // Auto-update submission status to 'scored'
+        await supabase.from('submissions').update({ status: 'scored' }).eq('id', scoringId);
+
+        // Compute and store average score on submission
+        const allSubScores = [...updatedScores];
+        const avgScore = allSubScores.reduce((a, s) => a + (s.overall_score || ((s.impact * 3) + (s.innovation * 1.5) + (s.scalability * 1.5) + (s.equity * 1) + (s.sustainability * 1) + (s.evidence * 1) + (s.ethics * 1)) || 0), 0) / Math.max(allSubScores.length, 1);
+        await supabase.from('submissions').update({ average_score: Math.round(avgScore * 100) / 100 }).eq('id', scoringId);
       }
 
       // Refresh scores

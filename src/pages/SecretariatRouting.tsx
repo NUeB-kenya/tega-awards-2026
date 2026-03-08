@@ -36,7 +36,9 @@ export default function SecretariatRouting() {
     return Math.round(subScores.reduce((sum, s) => sum + (s.overall_score || 0), 0) / subScores.length * 10) / 10;
   };
 
-  const national = submissions.filter(s => (s.stage || 'national') === 'national' && s.status === 'scored');
+  // Only show nationally scored submissions that actually have scores from judges
+  const scoredSubIds = new Set(scores.map(s => s.submission_id));
+  const national = submissions.filter(s => (s.stage || 'national') === 'national' && s.status === 'scored' && scoredSubIds.has(s.id));
   const continental = submissions.filter(s => s.stage === 'continental');
   const regional = submissions.filter(s => s.stage === 'regional');
   const globalSubs = submissions.filter(s => s.stage === 'global');

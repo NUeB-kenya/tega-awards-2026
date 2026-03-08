@@ -325,7 +325,7 @@ export default function SubmissionForm() {
     }
   };
 
-  const handleNominations = () => {
+  const handleNominations = async () => {
     for (const cat of selectedCategories) {
       if (!nominationStatements[cat]?.trim()) {
         toast({ title: `Nomination statement required for "${cat}"`, variant: 'destructive' });

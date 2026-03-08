@@ -541,8 +541,6 @@ export default function JudgeSubmissions() {
                               )}
                             </>
                           )}
-                            </>
-                          )}
                         </div>
                       </CardContent>
                     </Card>

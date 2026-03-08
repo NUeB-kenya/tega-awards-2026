@@ -66,6 +66,10 @@ const App = () => (
           <Route path="/secretariat/statistics" element={<ProtectedRoute allowedRoles={['secretariat', 'super_admin']}><SecretariatStatistics /></ProtectedRoute>} />
           <Route path="/secretariat/judge-work-rate" element={<ProtectedRoute allowedRoles={['secretariat', 'super_admin']}><SecretariatJudgeWorkRate /></ProtectedRoute>} />
           <Route path="/secretariat/rankings" element={<ProtectedRoute allowedRoles={['secretariat', 'super_admin']}><Rankings /></ProtectedRoute>} />
+          <Route path="/secretariat/rankings/national" element={<ProtectedRoute allowedRoles={['secretariat', 'super_admin']}><NationalRankings /></ProtectedRoute>} />
+          <Route path="/secretariat/rankings/regional" element={<ProtectedRoute allowedRoles={['secretariat', 'super_admin']}><RegionalRankings /></ProtectedRoute>} />
+          <Route path="/secretariat/rankings/continental" element={<ProtectedRoute allowedRoles={['secretariat', 'super_admin']}><ContinentalRankings /></ProtectedRoute>} />
+          <Route path="/secretariat/rankings/global" element={<ProtectedRoute allowedRoles={['secretariat', 'super_admin']}><GlobalRankings /></ProtectedRoute>} />
           <Route path="/admin/approvals" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><AdminApprovals /></ProtectedRoute>} />
           <Route path="/admin/judge-applications" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><AdminJudgeApprovals /></ProtectedRoute>} />
           <Route path="/admin/submissions" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><SecretariatSubmissions /></ProtectedRoute>} />

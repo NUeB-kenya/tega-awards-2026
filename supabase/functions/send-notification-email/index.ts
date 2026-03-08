@@ -68,6 +68,38 @@ serve(async (req) => {
           <p style="margin-top: 30px; color: #888;">— The TEGA Awards Secretariat</p>
         </div>
       `;
+    } else if (status === 'winner') {
+      subject = '🏆 TEGA Awards - You Are a Winner!';
+      html = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #ffffff;">
+          <div style="text-align: center; padding: 20px 0;">
+            <h1 style="color: #D4A017; font-size: 28px;">🏆 Congratulations, ${name}!</h1>
+            <p style="font-size: 18px; color: #333;">You Are Officially a TEGA Awards Winner!</p>
+          </div>
+          <div style="background: #FEF9E7; border-left: 4px solid #D4A017; padding: 20px; margin: 20px 0; border-radius: 4px;">
+            <p style="margin: 0; font-size: 16px;">We are thrilled to announce that <strong>${school}</strong> has been officially declared a <strong style="color: #D4A017;">TEGA Awards Winner</strong>!</p>
+          </div>
+          <p>This prestigious recognition celebrates your institution's outstanding contribution to education transformation and global impact.</p>
+          <h3 style="color: #D4A017;">🎁 Your Winner Benefits</h3>
+          <ul style="line-height: 2;">
+            <li><strong>Digital Certificate</strong> — Authenticated and delivered within 7 days of the gala</li>
+            <li><strong>Custom Trophy</strong> — Engraved and shipped within 2–4 weeks</li>
+            <li><strong>Global Media Exposure</strong> — Featured across TEGA platforms</li>
+            <li><strong>Official Winner Badge</strong> — Licensed for your institution's use</li>
+            <li><strong>TEGA Global Impact Registry</strong> — Permanent entry in our registry</li>
+          </ul>
+          <h3 style="color: #D4A017;">📋 Next Steps</h3>
+          <ul>
+            <li>Log in to your TEGA Portal dashboard for ceremony details</li>
+            <li>Watch for further communications about the awards gala</li>
+            <li>Prepare your acceptance remarks</li>
+          </ul>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="https://tega2026.lovable.app/dashboard" style="background: #D4A017; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold;">View Your Dashboard</a>
+          </div>
+          <p style="margin-top: 30px; color: #888; text-align: center;">— The TEGA Awards Secretariat</p>
+        </div>
+      `;
     } else {
       subject = 'TEGA Awards - Application Status Update';
       html = `

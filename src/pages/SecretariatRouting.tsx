@@ -280,7 +280,7 @@ export default function SecretariatRouting() {
           </div>
         </div>
         <p className="mb-8 text-muted-foreground">
-          Rankings are computed live. Top 3 per country → Continental → Regional → Global. Click <strong>Recalculate & Auto-Promote</strong> to rank all scored submissions and automatically promote top 3 winners at each tier. Use <strong>Declare Winners</strong> to officially announce winners at any stage.
+          Rankings are computed live. Top 3 per country → Regional → Continental → Global. Click <strong>Recalculate & Auto-Promote</strong> to rank all scored submissions and automatically promote winners at each tier. Use <strong>Declare Winners</strong> to officially announce winners at any stage.
         </p>
 
         {/* 4-tier summary */}

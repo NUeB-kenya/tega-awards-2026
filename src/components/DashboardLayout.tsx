@@ -5,18 +5,20 @@ import { useNavigate, Link, useLocation } from 'react-router-dom';
 import tegaLogo from '@/assets/tega-logo.png';
 import NotificationBell from '@/components/NotificationBell';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { LogOut, LayoutDashboard, FileText, Users, Award, Settings, Shield, CheckSquare, GitBranch, Layers, Menu, X, Bell, DollarSign, MessageSquare } from 'lucide-react';
+import { LogOut, LayoutDashboard, FileText, Users, Award, Settings, Shield, CheckSquare, GitBranch, Layers, Menu, X, Bell, DollarSign, MessageSquare, User } from 'lucide-react';
 
 const navItems: Record<string, { label: string; href: string; icon: React.ElementType }[]> = {
   submitter: [
     { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { label: 'My Applications', href: '/submissions', icon: FileText },
+    { label: 'Profile', href: '/profile', icon: User },
     { label: 'Notifications', href: '/notifications', icon: Bell },
   ],
   judge: [
     { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { label: 'Submissions', href: '/judge/submissions', icon: FileText },
     { label: 'My Scores', href: '/judge/scores', icon: Award },
+    { label: 'Profile', href: '/profile', icon: User },
     { label: 'Notifications', href: '/notifications', icon: Bell },
   ],
   secretariat: [
@@ -29,6 +31,7 @@ const navItems: Record<string, { label: string; href: string; icon: React.Elemen
     { label: 'Scores', href: '/secretariat/scores', icon: Award },
     { label: 'Manage Users', href: '/secretariat/users', icon: Settings },
     { label: 'Statistics', href: '/secretariat/statistics', icon: CheckSquare },
+    { label: 'Profile', href: '/profile', icon: User },
     { label: 'Notifications', href: '/notifications', icon: Bell },
   ],
   country_representative: [
@@ -36,6 +39,7 @@ const navItems: Record<string, { label: string; href: string; icon: React.Elemen
     { label: 'Screening Queue', href: '/secretariat/screening', icon: Shield },
     { label: 'All Submissions', href: '/secretariat/submissions', icon: FileText },
     { label: 'Panels', href: '/secretariat/panels', icon: Layers },
+    { label: 'Profile', href: '/profile', icon: User },
     { label: 'Notifications', href: '/notifications', icon: Bell },
   ],
   admin: [
@@ -45,6 +49,7 @@ const navItems: Record<string, { label: string; href: string; icon: React.Elemen
     { label: 'Manage Users', href: '/secretariat/users', icon: Users },
     { label: 'Finance', href: '/admin/finance', icon: DollarSign },
     { label: 'Messaging', href: '/admin/messaging', icon: MessageSquare },
+    { label: 'Profile', href: '/profile', icon: User },
     { label: 'Notifications', href: '/notifications', icon: Bell },
   ],
   super_admin: [
@@ -54,6 +59,7 @@ const navItems: Record<string, { label: string; href: string; icon: React.Elemen
     { label: 'Manage Users', href: '/secretariat/users', icon: Settings },
     { label: 'Finance', href: '/admin/finance', icon: DollarSign },
     { label: 'Messaging', href: '/admin/messaging', icon: MessageSquare },
+    { label: 'Profile', href: '/profile', icon: User },
     { label: 'Notifications', href: '/notifications', icon: Bell },
   ],
 };

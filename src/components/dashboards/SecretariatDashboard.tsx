@@ -10,7 +10,7 @@ export default function SecretariatDashboard() {
   const [stats, setStats] = useState({
     submissions: 0, judges: 0, scores: 0, applicants: 0,
     screening: 0, screened: 0, assigned: 0, panels: 0,
-    national: 0, regional: 0, global: 0,
+    national: 0, continental: 0, regional: 0, global: 0,
   });
 
   useEffect(() => {

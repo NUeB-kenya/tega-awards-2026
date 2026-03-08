@@ -522,6 +522,9 @@ export default function JudgeSubmissions() {
                         )}
                       </div>
 
+                      {/* Documents for this category */}
+                      <DocumentsPanel submissionId={scoringId!} category={cat} />
+
                       {/* Document verification */}
                       <div className="space-y-4">
                         <h3 className="font-semibold text-sm">Document Verification</h3>

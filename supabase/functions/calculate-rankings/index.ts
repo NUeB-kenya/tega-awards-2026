@@ -24,33 +24,89 @@ serve(async (req) => {
       .from('scores')
       .select('submission_id, overall_score, impact_score, innovation_score, criterion_evidence, criterion_ethics, category_name');
 
-    const scoredSubs = (submissions || []).filter(s => ['scored', 'winner', 'finalist'].includes(s.status));
+    // Fetch geography
+    const { data: countries } = await supabase.from('countries').select('id, name, region_id');
+    const { data: regions } = await supabase.from('regions').select('id, name');
+
+    // Build lookup maps
+    const regionMap: Record<string, string> = {};
+    regions?.forEach(r => { regionMap[r.id] = r.name; });
+
+    // country_id → region name
+    const countryToRegionName: Record<string, string> = {};
+    // country_id → region_id
+    const countryToRegionId: Record<string, string> = {};
+    // country_id → continent name
+    const countryToContinentName: Record<string, string> = {};
+    // country name → country_id (for matching by school_country)
+    const countryNameToId: Record<string, string> = {};
+
+    countries?.forEach(c => {
+      countryNameToId[c.name.toLowerCase()] = c.id;
+      countryToRegionId[c.id] = c.region_id || '';
+      const rName = regionMap[c.region_id || ''] || '';
+      countryToRegionName[c.id] = rName;
+
+      if (rName.includes('Africa') && rName.includes('East')) countryToContinentName[c.id] = 'Africa';
+      else if (rName.includes('Africa') && rName.includes('West')) countryToContinentName[c.id] = 'Africa';
+      else if (rName.includes('Africa') && rName.includes('South')) countryToContinentName[c.id] = 'Africa';
+      else if (rName.includes('Africa') && rName.includes('North')) countryToContinentName[c.id] = 'Africa';
+      else if (rName.includes('Africa') && rName.includes('Central')) countryToContinentName[c.id] = 'Africa';
+      else if (rName.includes('Africa')) countryToContinentName[c.id] = 'Africa';
+      else if (rName.includes('Europe')) countryToContinentName[c.id] = 'Europe';
+      else if (rName.includes('Asia') || rName.includes('Pacific')) countryToContinentName[c.id] = 'Asia-Pacific';
+      else if (rName.includes('America') || rName.includes('Caribbean')) countryToContinentName[c.id] = 'Americas';
+      else if (rName.includes('Middle East')) countryToContinentName[c.id] = 'Middle East';
+      else countryToContinentName[c.id] = 'Other';
+    });
+
+    // Helper: resolve country_id from submission
+    const resolveCountryId = (sub: any): string | null => {
+      if (sub.country_id) return sub.country_id;
+      if (sub.school_country) {
+        const found = countryNameToId[sub.school_country.toLowerCase()];
+        if (found) return found;
+      }
+      return null;
+    };
+
+    // Helper: resolve region name from country_id
+    const resolveRegionName = (countryId: string | null): string => {
+      if (!countryId) return 'Unknown Region';
+      return countryToRegionName[countryId] || 'Unknown Region';
+    };
+
+    const resolveContinentName = (countryId: string | null): string => {
+      if (!countryId) return 'Unknown';
+      return countryToContinentName[countryId] || 'Unknown';
+    };
+
+    // --- FIRST: Backfill missing region on all submissions that have a country_id ---
+    const allSubs = submissions || [];
+    for (const sub of allSubs) {
+      const cid = resolveCountryId(sub);
+      const regionName = resolveRegionName(cid);
+      const needsUpdate = (!sub.region && cid) || (!sub.country_id && cid);
+      if (needsUpdate) {
+        const updates: Record<string, any> = {};
+        if (!sub.region) updates.region = regionName;
+        if (!sub.country_id && cid) updates.country_id = cid;
+        if (Object.keys(updates).length > 0) {
+          await supabase.from('submissions').update(updates).eq('id', sub.id);
+          // Update local copy too
+          if (updates.region) sub.region = updates.region;
+          if (updates.country_id) sub.country_id = updates.country_id;
+        }
+      }
+    }
+
+    const scoredSubs = allSubs.filter(s => ['scored', 'winner', 'finalist'].includes(s.status));
 
     if (!scoredSubs.length) {
       return new Response(JSON.stringify({ success: true, message: 'No scored submissions to rank', ranked: 0, promoted: 0 }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-
-    // Country/region/continent mapping
-    const { data: countries } = await supabase.from('countries').select('id, name, region_id');
-    const { data: regions } = await supabase.from('regions').select('id, name');
-
-    const regionMap: Record<string, string> = {};
-    regions?.forEach(r => { regionMap[r.id] = r.name; });
-
-    const countryRegionMap: Record<string, string> = {};
-    const countryContinentMap: Record<string, string> = {};
-    countries?.forEach(c => {
-      countryRegionMap[c.id] = c.region_id || '';
-      const rName = regionMap[c.region_id || ''] || '';
-      if (rName.includes('Africa')) countryContinentMap[c.id] = 'Africa';
-      else if (rName.includes('Europe')) countryContinentMap[c.id] = 'Europe';
-      else if (rName.includes('Asia') || rName.includes('Pacific')) countryContinentMap[c.id] = 'Asia-Pacific';
-      else if (rName.includes('America') || rName.includes('Caribbean')) countryContinentMap[c.id] = 'Americas';
-      else if (rName.includes('Middle East')) countryContinentMap[c.id] = 'Middle East';
-      else countryContinentMap[c.id] = 'Other';
-    });
 
     // Build aggregated score entries per submission per category
     type RankEntry = {
@@ -74,6 +130,10 @@ serve(async (req) => {
     for (const sub of scoredSubs) {
       const subScores = (allScores || []).filter(s => s.submission_id === sub.id);
       if (subScores.length === 0) continue;
+
+      const cid = resolveCountryId(sub);
+      const regionName = resolveRegionName(cid);
+      const continentName = resolveContinentName(cid);
 
       const categories = sub.award_categories || [];
       if (categories.length === 0) categories.push('General');
@@ -102,9 +162,9 @@ serve(async (req) => {
           submission_id: sub.id,
           category_id: sub.category_id,
           category_name: catName,
-          country_id: sub.country_id,
-          region: sub.region || countryRegionMap[sub.country_id || ''] || null,
-          continent: countryContinentMap[sub.country_id || ''] || null,
+          country_id: cid,
+          region: regionName,
+          continent: continentName,
           stage: sub.stage || 'national',
           final_score: Math.round(finalScore * 100) / 100,
         });
@@ -122,7 +182,7 @@ serve(async (req) => {
 
     // ===== RANKING HIERARCHY: National → Regional → Continental → Global =====
 
-    // 1. COUNTRY RANK: ALL entries per country+category, ranked 1 to last
+    // 1. COUNTRY RANK: per country+category, highest score = rank 1
     const byCountryCategory: Record<string, RankEntry[]> = {};
     entries.forEach(e => {
       const key = `${e.country_id}::${e.category_name}`;
@@ -134,7 +194,7 @@ serve(async (req) => {
       group.forEach((e, i) => { e.country_rank = i + 1; });
     });
 
-    // 2. REGIONAL RANK: Country top 3 → grouped by region+category, ranked 1 to N (display top 50)
+    // 2. REGIONAL RANK: Country top 3 → grouped by region+category, highest score = rank 1
     const byRegionCategory: Record<string, RankEntry[]> = {};
     entries.filter(e => (e.country_rank || 999) <= 3).forEach(e => {
       const key = `${e.region}::${e.category_name}`;
@@ -146,9 +206,9 @@ serve(async (req) => {
       group.forEach((e, i) => { e.regional_rank = i + 1; });
     });
 
-    // 3. CONTINENTAL RANK: Regional entries → grouped by continent+category, ranked 1 to N (display top 100)
+    // 3. CONTINENTAL RANK: Regional top 50 → grouped by continent+category, highest score = rank 1
     const byContinentCategory: Record<string, RankEntry[]> = {};
-    entries.filter(e => e.regional_rank != null).forEach(e => {
+    entries.filter(e => e.regional_rank != null && e.regional_rank <= 50).forEach(e => {
       const key = `${e.continent}::${e.category_name}`;
       if (!byContinentCategory[key]) byContinentCategory[key] = [];
       byContinentCategory[key].push(e);
@@ -158,9 +218,9 @@ serve(async (req) => {
       group.forEach((e, i) => { e.continental_rank = i + 1; });
     });
 
-    // 4. GLOBAL RANK: All continental entries → ranked 1 to last
+    // 4. GLOBAL RANK: Continental top 100 → all in one pool per category, highest score = rank 1
     const byGlobalCategory: Record<string, RankEntry[]> = {};
-    entries.filter(e => e.continental_rank != null).forEach(e => {
+    entries.filter(e => e.continental_rank != null && e.continental_rank <= 100).forEach(e => {
       const key = e.category_name;
       if (!byGlobalCategory[key]) byGlobalCategory[key] = [];
       byGlobalCategory[key].push(e);
@@ -200,7 +260,6 @@ serve(async (req) => {
 
     // ===== AUTO-PROMOTION: National → Regional → Continental → Global =====
     let promotedCount = 0;
-    const allSubs = submissions || [];
     const subMap = Object.fromEntries(allSubs.map(s => [s.id, s]));
 
     const stagePromotions: { fromStage: string; toStage: string; rankField: keyof RankEntry; topN: number }[] = [
@@ -229,6 +288,9 @@ serve(async (req) => {
         const existing = allSubs.find(s => s.parent_submission_id === sub.id && s.stage === promo.toStage);
         if (existing) continue;
 
+        const cid = resolveCountryId(sub);
+        const regionName = resolveRegionName(cid);
+
         // Calculate parent avg score to carry forward
         const parentScores = (allScores || []).filter(s => s.submission_id === sub.id);
         const parentAvg = parentScores.length > 0
@@ -250,8 +312,8 @@ serve(async (req) => {
           nomination_statements: sub.nomination_statements,
           award_categories: sub.award_categories,
           category_id: sub.category_id,
-          country_id: sub.country_id,
-          region: sub.region,
+          country_id: cid,
+          region: regionName,
           stage: promo.toStage,
           status: 'submitted',
           approval_status: 'pending',

@@ -470,6 +470,15 @@ export default function JudgeSubmissions() {
                   const totalCats = sub.award_categories?.length || 0;
                   const scoredCats = getCategoryScoredCount(sub.id);
                   const allScored = totalCats > 0 && scoredCats >= totalCats;
+                  const isAlreadyScored = sub.status === 'scored' || sub.status === 'winner' || sub.status === 'finalist';
+                  const isDeferred = sub.screening_notes?.startsWith('DEFERRED:');
+
+                  // Judges can only pick unscored, unassigned submissions
+                  const canPick = isEligibleForScoring && !isAssignedToMe && !isAssignedToOther && !isAlreadyScored;
+                  // Re-score allowed max 2 times (unless deferred by secretariat)
+                  const myScoreCount = (scores[sub.id] || []).length;
+                  const rescoreLimit = isDeferred ? Infinity : 2;
+                  const canRescore = isEligibleForScoring && isAssignedToMe && myScoreCount < rescoreLimit * totalCats;
 
                   return (
                     <Card key={sub.id} className="glass-card">
@@ -477,8 +486,8 @@ export default function JudgeSubmissions() {
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
                             <h3 className="font-semibold">{sub.school_name}</h3>
-                            {sub.status === 'scored' && (
-                              <Badge className="bg-success/20 text-success border-0 text-[10px]">Scored</Badge>
+                            {isAlreadyScored && (
+                              <Badge className="bg-success/20 text-success border-0 text-[10px]">{sub.status}</Badge>
                             )}
                           </div>
                           <p className="text-sm text-muted-foreground">{sub.school_city}, {sub.school_country} · {sub.nominator_name}</p>
@@ -499,9 +508,9 @@ export default function JudgeSubmissions() {
                           )}
                         </div>
                         <div className="flex items-center gap-2">
-                          {isAssignedToOther ? (
+                          {isAssignedToOther || (isAlreadyScored && !isAssignedToMe) ? (
                             <Badge className="bg-destructive/20 text-destructive border-0 gap-1">
-                              <Lock className="h-3 w-3" /> Assigned to another judge
+                              <Lock className="h-3 w-3" /> {isAlreadyScored ? 'Already judged' : 'Assigned to another judge'}
                             </Badge>
                           ) : (
                             <>
@@ -517,15 +526,18 @@ export default function JudgeSubmissions() {
                               <Button variant="outline" size="sm" className="gap-1" onClick={() => viewDocuments(sub.id)}>
                                 <FileText className="h-3.5 w-3.5" /> Docs
                               </Button>
-                              {isEligibleForScoring && !isAssignedToMe && sub.status !== 'scored' && (
+                              {canPick && (
                                 <Button size="sm" className="bg-gradient-gold gap-1" onClick={() => pickSubmission(sub.id)}>
                                   Pick
                                 </Button>
                               )}
-                              {isEligibleForScoring && isAssignedToMe && (
+                              {isAssignedToMe && canRescore && (
                                 <Button size="sm" className="bg-gradient-gold gap-1" onClick={() => openScoring(sub.id)}>
                                   <Star className="h-3.5 w-3.5" /> {allScored ? 'Re-score' : 'Score'}
                                 </Button>
+                              )}
+                              {isAssignedToMe && !canRescore && allScored && (
+                                <Badge className="bg-muted text-muted-foreground border-0 text-[10px]">Re-score limit reached</Badge>
                               )}
                             </>
                           )}

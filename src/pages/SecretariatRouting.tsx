@@ -404,18 +404,18 @@ export default function SecretariatRouting() {
           })
         )}
 
-        {/* Continental */}
-        <h2 className="font-display text-xl font-bold mb-4 mt-8">🌍 Continental Stage</h2>
-        {continental.length > 0
-          ? renderStageTable(continental, 'Continental Submissions', 'continental')
-          : <Card className="glass-card py-8 text-center mb-8"><p className="text-muted-foreground">No continental-stage submissions yet.</p></Card>
-        }
-
         {/* Regional */}
         <h2 className="font-display text-xl font-bold mb-4 mt-8">🗺️ Regional Stage</h2>
         {regional.length > 0
           ? renderStageTable(regional, 'Regional Submissions', 'regional')
           : <Card className="glass-card py-8 text-center mb-8"><p className="text-muted-foreground">No regional-stage submissions yet.</p></Card>
+        }
+
+        {/* Continental */}
+        <h2 className="font-display text-xl font-bold mb-4 mt-8">🌍 Continental Stage</h2>
+        {continental.length > 0
+          ? renderStageTable(continental, 'Continental Submissions', 'continental')
+          : <Card className="glass-card py-8 text-center mb-8"><p className="text-muted-foreground">No continental-stage submissions yet.</p></Card>
         }
 
         {/* Global */}

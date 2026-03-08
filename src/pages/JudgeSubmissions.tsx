@@ -390,71 +390,134 @@ export default function JudgeSubmissions() {
             <p className="text-muted-foreground">No applications available yet.</p>
           </Card>
         ) : (
-          <div className="space-y-4">
-            {submissions.map((sub) => {
-              const assignment = assignments[sub.id];
-              const isAssignedToOther = assignment && assignment.judge_id !== user?.id;
-              const isAssignedToMe = assignment && assignment.judge_id === user?.id;
-              const isEligibleForScoring = canScoreSubmission(sub);
-              const totalCats = sub.award_categories?.length || 0;
-              const scoredCats = getCategoryScoredCount(sub.id);
-              const allScored = totalCats > 0 && scoredCats >= totalCats;
-
-              return (
-                <Card key={sub.id} className="glass-card">
-                  <CardContent className="flex items-center justify-between p-5">
-                    <div className="flex-1">
-                      <h3 className="font-semibold">{sub.school_name}</h3>
-                      <p className="text-sm text-muted-foreground">{sub.school_city}, {sub.school_country} · {sub.nominator_name}</p>
-                      <div className="mt-2 flex flex-wrap gap-1">
-                        {sub.award_categories?.map((cat: string) => {
-                          const scored = (scores[sub.id] || []).some((s: any) => s.category_name === cat);
-                          return (
-                            <Badge key={cat} variant="outline" className={`text-xs ${scored ? 'border-success/50 text-success' : 'border-border'}`}>
-                              {scored && '✓ '}{cat}
-                            </Badge>
-                          );
-                        })}
-                      </div>
-                      {scoredCats > 0 && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {scoredCats}/{totalCats} categories scored
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {!isEligibleForScoring && (
-                        <Badge className="bg-warning/20 text-warning border-0">View only</Badge>
-                      )}
-                      {isAssignedToOther && (
-                        <Badge className="bg-warning/20 text-warning border-0 gap-1">
-                          <Lock className="h-3 w-3" /> Verification ongoing
-                        </Badge>
-                      )}
-                      {allScored && (
-                        <Badge className="bg-success/20 text-success border-0">All scored</Badge>
-                      )}
-                      <Button variant="outline" size="sm" className="gap-1" onClick={() => setViewingId(sub.id)}>
-                        <Eye className="h-3.5 w-3.5" /> View
-                      </Button>
-                      <Button variant="outline" size="sm" className="gap-1" onClick={() => viewDocuments(sub.id)}>
-                        <FileText className="h-3.5 w-3.5" /> Docs
-                      </Button>
-                      {isEligibleForScoring && !isAssignedToOther && !isAssignedToMe && (
-                        <Button size="sm" className="bg-gradient-gold gap-1" onClick={() => pickSubmission(sub.id)}>
-                          Pick
-                        </Button>
-                      )}
-                      {isEligibleForScoring && isAssignedToMe && (
-                        <Button size="sm" className="bg-gradient-gold gap-1" onClick={() => openScoring(sub.id)}>
-                          <Star className="h-3.5 w-3.5" /> {allScored ? 'Re-score' : 'Score'}
-                        </Button>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
+          <div className="space-y-6">
+            {/* Deferred applications - returned by secretariat */}
+            {(() => {
+              const deferred = submissions.filter(sub => 
+                sub.status === 'assigned' && sub.screening_notes?.startsWith('DEFERRED:') &&
+                assignments[sub.id]?.judge_id === user?.id
               );
-            })}
+              if (deferred.length === 0) return null;
+              return (
+                <div>
+                  <h2 className="font-display text-lg font-semibold mb-3 text-warning flex items-center gap-2">
+                    🔄 Deferred — Re-evaluation Required ({deferred.length})
+                  </h2>
+                  <div className="space-y-3">
+                    {deferred.map(sub => (
+                      <Card key={sub.id} className="glass-card border-warning/30">
+                        <CardContent className="p-5">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <h3 className="font-semibold">{sub.school_name}</h3>
+                              <p className="text-sm text-muted-foreground">{sub.school_city}, {sub.school_country}</p>
+                              <div className="mt-2 bg-warning/10 rounded-lg p-2">
+                                <p className="text-xs font-semibold text-warning">Secretariat Notes:</p>
+                                <p className="text-xs text-muted-foreground mt-1">{sub.screening_notes?.replace('DEFERRED: ', '')}</p>
+                              </div>
+                              <div className="mt-2 flex flex-wrap gap-1">
+                                {sub.award_categories?.map((cat: string) => {
+                                  const scored = (scores[sub.id] || []).some((s: any) => s.category_name === cat);
+                                  return (
+                                    <Badge key={cat} variant="outline" className={`text-xs ${scored ? 'border-success/50 text-success' : 'border-border'}`}>
+                                      {scored && '✓ '}{cat}
+                                    </Badge>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Button variant="outline" size="sm" className="gap-1" onClick={() => setViewingId(sub.id)}>
+                                <Eye className="h-3.5 w-3.5" /> View
+                              </Button>
+                              <Button size="sm" className="bg-gradient-gold gap-1" onClick={() => openScoring(sub.id)}>
+                                <Star className="h-3.5 w-3.5" /> Re-score
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Regular submissions */}
+            <div>
+              <h2 className="font-display text-lg font-semibold mb-3">Applications</h2>
+              <div className="space-y-4">
+                {submissions.filter(sub => !(sub.status === 'assigned' && sub.screening_notes?.startsWith('DEFERRED:') && assignments[sub.id]?.judge_id === user?.id)).map((sub) => {
+                  const assignment = assignments[sub.id];
+                  const isAssignedToOther = assignment && assignment.judge_id !== user?.id;
+                  const isAssignedToMe = assignment && assignment.judge_id === user?.id;
+                  const isEligibleForScoring = canScoreSubmission(sub);
+                  const totalCats = sub.award_categories?.length || 0;
+                  const scoredCats = getCategoryScoredCount(sub.id);
+                  const allScored = totalCats > 0 && scoredCats >= totalCats;
+
+                  return (
+                    <Card key={sub.id} className="glass-card">
+                      <CardContent className="flex items-center justify-between p-5">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-semibold">{sub.school_name}</h3>
+                            {sub.status === 'scored' && (
+                              <Badge className="bg-success/20 text-success border-0 text-[10px]">Scored</Badge>
+                            )}
+                          </div>
+                          <p className="text-sm text-muted-foreground">{sub.school_city}, {sub.school_country} · {sub.nominator_name}</p>
+                          <div className="mt-2 flex flex-wrap gap-1">
+                            {sub.award_categories?.map((cat: string) => {
+                              const scored = (scores[sub.id] || []).some((s: any) => s.category_name === cat);
+                              return (
+                                <Badge key={cat} variant="outline" className={`text-xs ${scored ? 'border-success/50 text-success' : 'border-border'}`}>
+                                  {scored && '✓ '}{cat}
+                                </Badge>
+                              );
+                            })}
+                          </div>
+                          {scoredCats > 0 && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {scoredCats}/{totalCats} categories scored
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {!isEligibleForScoring && (
+                            <Badge className="bg-warning/20 text-warning border-0">View only</Badge>
+                          )}
+                          {isAssignedToOther && (
+                            <Badge className="bg-warning/20 text-warning border-0 gap-1">
+                              <Lock className="h-3 w-3" /> Verification ongoing
+                            </Badge>
+                          )}
+                          {allScored && (
+                            <Badge className="bg-success/20 text-success border-0">All scored</Badge>
+                          )}
+                          <Button variant="outline" size="sm" className="gap-1" onClick={() => setViewingId(sub.id)}>
+                            <Eye className="h-3.5 w-3.5" /> View
+                          </Button>
+                          <Button variant="outline" size="sm" className="gap-1" onClick={() => viewDocuments(sub.id)}>
+                            <FileText className="h-3.5 w-3.5" /> Docs
+                          </Button>
+                          {isEligibleForScoring && !isAssignedToOther && !isAssignedToMe && sub.status !== 'scored' && (
+                            <Button size="sm" className="bg-gradient-gold gap-1" onClick={() => pickSubmission(sub.id)}>
+                              Pick
+                            </Button>
+                          )}
+                          {isEligibleForScoring && isAssignedToMe && (
+                            <Button size="sm" className="bg-gradient-gold gap-1" onClick={() => openScoring(sub.id)}>
+                              <Star className="h-3.5 w-3.5" /> {allScored ? 'Re-score' : 'Score'}
+                            </Button>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         )}
 

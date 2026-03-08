@@ -4,8 +4,25 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { Card } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
+// Fixed category ordering
+const CATEGORY_ORDER = [
+  'Global Transformational School of the Year',
+  'Global Education Innovation of the Year',
+  'Transformational Educator of the Year',
+  'STEM & Future Skills Advancement',
+  'AI & Data Innovation in Education',
+  'Inclusive Learning & Special Needs Education',
+  'EdTech for Low-Resource & Rural Education',
+  'Sustainability & Climate Education',
+  'Youth Education Changemaker',
+  'Lifetime Contribution to Education Transformation',
+  'Community & Parental Engagement in Education',
+  'Early Childhood & Foundational Learning',
+  'Vocational & Technical Skills Education',
+  'Teacher Professional Development Innovation',
+];
 
 export default function SecretariatScores() {
   const [scores, setScores] = useState<any[]>([]);
@@ -29,7 +46,13 @@ export default function SecretariatScores() {
 
         const allCats = new Set<string>();
         data.forEach(s => { if (s.category_name) allCats.add(s.category_name); });
-        setCategories([...allCats].sort());
+        // Sort categories by predefined order
+        const sorted = [...allCats].sort((a, b) => {
+          const ia = CATEGORY_ORDER.indexOf(a);
+          const ib = CATEGORY_ORDER.indexOf(b);
+          return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+        });
+        setCategories(sorted);
       }
       setScores(data || []);
       setLoading(false);
@@ -39,12 +62,40 @@ export default function SecretariatScores() {
 
   const filtered = filterCategory === 'all' ? scores : scores.filter(s => s.category_name === filterCategory);
 
-  // Group by submission + category
+  // Group by submission + category, sorted by category order then score desc
   const grouped: Record<string, any[]> = {};
   filtered.forEach(s => {
     const key = `${s.submission_id}::${s.category_name || 'general'}`;
     if (!grouped[key]) grouped[key] = [];
     grouped[key].push(s);
+  });
+
+  // Sort grouped entries: by category order, then by average score descending
+  const sortedGroups = Object.entries(grouped).sort(([, aScores], [, bScores]) => {
+    const catA = aScores[0]?.category_name || '';
+    const catB = bScores[0]?.category_name || '';
+    const orderA = CATEGORY_ORDER.indexOf(catA);
+    const orderB = CATEGORY_ORDER.indexOf(catB);
+    const catCompare = (orderA === -1 ? 999 : orderA) - (orderB === -1 ? 999 : orderB);
+    if (catCompare !== 0) return catCompare;
+    const avgA = aScores.reduce((a: number, s: any) => a + (s.overall_score || 0), 0) / aScores.length;
+    const avgB = bScores.reduce((a: number, s: any) => a + (s.overall_score || 0), 0) / bScores.length;
+    return avgB - avgA;
+  });
+
+  // Compute rank within each category
+  const categoryRanks: Record<string, number> = {};
+  let currentCat = '';
+  let currentRank = 0;
+  sortedGroups.forEach(([key, groupScores]) => {
+    const cat = groupScores[0]?.category_name || 'general';
+    if (cat !== currentCat) {
+      currentCat = cat;
+      currentRank = 1;
+    } else {
+      currentRank++;
+    }
+    categoryRanks[key] = currentRank;
   });
 
   return (
@@ -121,17 +172,22 @@ export default function SecretariatScores() {
           </Table>
         </Card>
 
-        {/* Summary by Submission */}
+        {/* Summary by Submission & Category - ranked */}
         <h2 className="font-display text-lg font-semibold mt-8 mb-4">Score Summary by Submission & Category</h2>
         <div className="space-y-3">
-          {Object.entries(grouped).map(([key, groupScores]) => {
+          {sortedGroups.map(([key, groupScores]) => {
             const first = groupScores[0];
-            const avgOverall = groupScores.reduce((a, s) => a + (s.overall_score || 0), 0) / groupScores.length;
+            const avgOverall = groupScores.reduce((a: number, s: any) => a + (s.overall_score || 0), 0) / groupScores.length;
+            const rank = categoryRanks[key];
+            const tierColor = rank <= 3 ? 'border-l-amber-500' : rank <= 10 ? 'border-l-primary' : 'border-l-border';
             return (
-              <Card key={key} className="glass-card p-4">
+              <Card key={key} className={`glass-card p-4 border-l-4 ${tierColor}`}>
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-semibold">{(first.submissions as any)?.school_name || 'N/A'}</p>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-bold text-muted-foreground">#{rank}</span>
+                      <p className="font-semibold">{(first.submissions as any)?.school_name || 'N/A'}</p>
+                    </div>
                     <Badge variant="outline" className="border-primary/30 text-primary text-[10px] mt-1">
                       {first.category_name || 'General'}
                     </Badge>
@@ -139,6 +195,8 @@ export default function SecretariatScores() {
                   <div className="text-right">
                     <p className="text-sm text-muted-foreground">{groupScores.length} judge{groupScores.length > 1 ? 's' : ''}</p>
                     <p className="text-lg font-bold text-primary">{avgOverall.toFixed(1)}/100</p>
+                    {rank <= 3 && <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 text-[10px]">🏆 Top 3</Badge>}
+                    {rank > 3 && rank <= 10 && <Badge className="bg-primary/20 text-primary border-primary/30 text-[10px]">⭐ Top 10</Badge>}
                   </div>
                 </div>
               </Card>

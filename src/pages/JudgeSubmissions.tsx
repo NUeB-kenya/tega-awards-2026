@@ -549,23 +549,35 @@ export default function JudgeSubmissions() {
                     {viewingSub.award_categories?.map((c: string) => <Badge key={c} variant="outline" className="border-border">{c}</Badge>)}
                   </div>
                 </div>
-                {/* Per-category nomination statements */}
-                {viewingSub.nomination_statements && typeof viewingSub.nomination_statements === 'object' && Object.keys(viewingSub.nomination_statements).length > 0 ? (
-                  <div className="space-y-3">
-                    <span className="text-muted-foreground text-xs block">Nomination Statements by Category</span>
-                    {Object.entries(viewingSub.nomination_statements).map(([cat, text]: any) => (
-                      <div key={cat} className="bg-secondary/50 rounded-lg p-3">
-                        <p className="text-xs font-semibold text-primary mb-1">{cat}</p>
-                        <p className="text-sm whitespace-pre-wrap">{text}</p>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div>
-                    <span className="text-muted-foreground">Nomination Statement:</span>
-                    <p className="mt-1">{viewingSub.nomination_statement}</p>
-                  </div>
-                )}
+                {/* Per-category nomination statements — always shown prominently */}
+                <div className="space-y-3">
+                  <h3 className="font-semibold text-sm flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-primary" /> Nomination Statements
+                  </h3>
+                  {viewingSub.nomination_statements && typeof viewingSub.nomination_statements === 'object' && Object.keys(viewingSub.nomination_statements).length > 0 ? (
+                    <>
+                      {(viewingSub.award_categories || []).map((cat: string) => {
+                        const text = (viewingSub.nomination_statements as Record<string, string>)?.[cat];
+                        return (
+                          <div key={cat} className="bg-accent/10 border border-accent/30 rounded-lg p-3">
+                            <p className="text-xs font-semibold text-primary mb-1">{cat}</p>
+                            {text ? (
+                              <p className="text-sm whitespace-pre-wrap leading-relaxed">{text}</p>
+                            ) : (
+                              <p className="text-sm text-muted-foreground italic">No statement provided for this category.</p>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </>
+                  ) : viewingSub.nomination_statement && viewingSub.nomination_statement !== 'See per-category statements' ? (
+                    <div className="bg-accent/10 border border-accent/30 rounded-lg p-3">
+                      <p className="text-sm whitespace-pre-wrap leading-relaxed">{viewingSub.nomination_statement}</p>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground italic">No nomination statements provided.</p>
+                  )}
+                </div>
                 {viewingSub.past_awards && <div><span className="text-muted-foreground">Past Awards:</span> {viewingSub.past_awards}</div>}
               </div>
             )}
@@ -637,12 +649,19 @@ export default function JudgeSubmissions() {
                         <p className="text-xs text-muted-foreground mt-1">
                           Score this category using the 7 criteria below. Each scored 0–10, auto-weighted to 100 points.
                         </p>
-                        {/* Show nomination statement for this category */}
-                        {scoringSub.nomination_statements?.[cat] && (
-                          <div className="mt-2 bg-secondary/50 rounded p-2">
-                            <p className="text-xs text-muted-foreground">Applicant's statement:</p>
-                            <p className="text-xs mt-1 whitespace-pre-wrap">{scoringSub.nomination_statements[cat]}</p>
-                          </div>
+                      </div>
+
+                      {/* Nomination Statement - prominent display */}
+                      <div className="bg-accent/10 border border-accent/30 rounded-lg p-4">
+                        <h3 className="font-semibold text-sm flex items-center gap-2 text-accent-foreground mb-2">
+                          <FileText className="h-4 w-4 text-primary" /> Nomination Statement — {cat}
+                        </h3>
+                        {scoringSub.nomination_statements && typeof scoringSub.nomination_statements === 'object' && (scoringSub.nomination_statements as Record<string, string>)[cat] ? (
+                          <p className="text-sm whitespace-pre-wrap leading-relaxed">{(scoringSub.nomination_statements as Record<string, string>)[cat]}</p>
+                        ) : scoringSub.nomination_statement && scoringSub.nomination_statement !== 'See per-category statements' ? (
+                          <p className="text-sm whitespace-pre-wrap leading-relaxed">{scoringSub.nomination_statement}</p>
+                        ) : (
+                          <p className="text-sm text-muted-foreground italic">No nomination statement provided for this category.</p>
                         )}
                       </div>
 

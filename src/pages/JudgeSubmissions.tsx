@@ -637,12 +637,19 @@ export default function JudgeSubmissions() {
                         <p className="text-xs text-muted-foreground mt-1">
                           Score this category using the 7 criteria below. Each scored 0–10, auto-weighted to 100 points.
                         </p>
-                        {/* Show nomination statement for this category */}
-                        {scoringSub.nomination_statements?.[cat] && (
-                          <div className="mt-2 bg-secondary/50 rounded p-2">
-                            <p className="text-xs text-muted-foreground">Applicant's statement:</p>
-                            <p className="text-xs mt-1 whitespace-pre-wrap">{scoringSub.nomination_statements[cat]}</p>
-                          </div>
+                      </div>
+
+                      {/* Nomination Statement - prominent display */}
+                      <div className="bg-accent/10 border border-accent/30 rounded-lg p-4">
+                        <h3 className="font-semibold text-sm flex items-center gap-2 text-accent-foreground mb-2">
+                          <FileText className="h-4 w-4 text-primary" /> Nomination Statement — {cat}
+                        </h3>
+                        {scoringSub.nomination_statements && typeof scoringSub.nomination_statements === 'object' && (scoringSub.nomination_statements as Record<string, string>)[cat] ? (
+                          <p className="text-sm whitespace-pre-wrap leading-relaxed">{(scoringSub.nomination_statements as Record<string, string>)[cat]}</p>
+                        ) : scoringSub.nomination_statement && scoringSub.nomination_statement !== 'See per-category statements' ? (
+                          <p className="text-sm whitespace-pre-wrap leading-relaxed">{scoringSub.nomination_statement}</p>
+                        ) : (
+                          <p className="text-sm text-muted-foreground italic">No nomination statement provided for this category.</p>
                         )}
                       </div>
 

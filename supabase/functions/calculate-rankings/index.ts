@@ -18,7 +18,7 @@ serve(async (req) => {
     // Fetch all scored/winner/finalist submissions
     const { data: submissions } = await supabase
       .from('submissions')
-      .select('id, school_name, school_country, school_city, submitter_id, nominator_name, nominator_email, nominator_phone, nominator_role, institution_type, institution_size, nomination_statement, nomination_statements, award_categories, category_id, country_id, region, stage, status, parent_submission_id');
+      .select('id, school_name, school_country, school_city, submitter_id, nominator_name, nominator_email, nominator_phone, nominator_role, institution_type, institution_size, nomination_statement, nomination_statements, award_categories, category_id, country_id, region, stage, status, parent_submission_id, average_score');
 
     const { data: allScores } = await supabase
       .from('scores')
@@ -63,8 +63,8 @@ serve(async (req) => {
       stage: string;
       final_score: number;
       country_rank?: number;
-      continental_rank?: number;
       regional_rank?: number;
+      continental_rank?: number;
       global_rank?: number;
       tier_level?: string;
     };
@@ -120,8 +120,9 @@ serve(async (req) => {
       });
     }
 
-    // --- RANKING ---
-    // Country rank per category
+    // ===== RANKING HIERARCHY: National → Regional → Continental → Global =====
+
+    // 1. COUNTRY RANK: ALL entries per country+category, ranked 1 to last
     const byCountryCategory: Record<string, RankEntry[]> = {};
     entries.forEach(e => {
       const key = `${e.country_id}::${e.category_name}`;
@@ -133,21 +134,9 @@ serve(async (req) => {
       group.forEach((e, i) => { e.country_rank = i + 1; });
     });
 
-    // Continental rank: country top 3
-    const byContinentCategory: Record<string, RankEntry[]> = {};
-    entries.filter(e => (e.country_rank || 999) <= 3).forEach(e => {
-      const key = `${e.continent}::${e.category_name}`;
-      if (!byContinentCategory[key]) byContinentCategory[key] = [];
-      byContinentCategory[key].push(e);
-    });
-    Object.values(byContinentCategory).forEach(group => {
-      group.sort((a, b) => b.final_score - a.final_score);
-      group.forEach((e, i) => { e.continental_rank = i + 1; });
-    });
-
-    // Regional rank: continental top 3
+    // 2. REGIONAL RANK: Country top 3 → grouped by region+category, ranked 1 to N (display top 50)
     const byRegionCategory: Record<string, RankEntry[]> = {};
-    entries.filter(e => e.continental_rank && e.continental_rank <= 3).forEach(e => {
+    entries.filter(e => (e.country_rank || 999) <= 3).forEach(e => {
       const key = `${e.region}::${e.category_name}`;
       if (!byRegionCategory[key]) byRegionCategory[key] = [];
       byRegionCategory[key].push(e);
@@ -157,9 +146,21 @@ serve(async (req) => {
       group.forEach((e, i) => { e.regional_rank = i + 1; });
     });
 
-    // Global rank: regional top 3
+    // 3. CONTINENTAL RANK: Regional entries → grouped by continent+category, ranked 1 to N (display top 100)
+    const byContinentCategory: Record<string, RankEntry[]> = {};
+    entries.filter(e => e.regional_rank != null).forEach(e => {
+      const key = `${e.continent}::${e.category_name}`;
+      if (!byContinentCategory[key]) byContinentCategory[key] = [];
+      byContinentCategory[key].push(e);
+    });
+    Object.values(byContinentCategory).forEach(group => {
+      group.sort((a, b) => b.final_score - a.final_score);
+      group.forEach((e, i) => { e.continental_rank = i + 1; });
+    });
+
+    // 4. GLOBAL RANK: All continental entries → ranked 1 to last
     const byGlobalCategory: Record<string, RankEntry[]> = {};
-    entries.filter(e => e.regional_rank && e.regional_rank <= 3).forEach(e => {
+    entries.filter(e => e.continental_rank != null).forEach(e => {
       const key = e.category_name;
       if (!byGlobalCategory[key]) byGlobalCategory[key] = [];
       byGlobalCategory[key].push(e);
@@ -169,9 +170,9 @@ serve(async (req) => {
       group.forEach((e, i) => { e.global_rank = i + 1; });
     });
 
-    // Tier levels
+    // Tier levels based on global rank
     entries.forEach(e => {
-      const rank = e.global_rank || e.regional_rank || e.continental_rank || e.country_rank || 999;
+      const rank = e.global_rank || e.continental_rank || e.regional_rank || e.country_rank || 999;
       if (rank <= 3) e.tier_level = 'gold';
       else if (rank <= 10) e.tier_level = 'silver';
       else if (rank <= 24) e.tier_level = 'bronze';
@@ -187,8 +188,8 @@ serve(async (req) => {
       region_id: e.region,
       continent: e.continent,
       country_rank: e.country_rank || null,
-      continental_rank: e.continental_rank || null,
       regional_rank: e.regional_rank || null,
+      continental_rank: e.continental_rank || null,
       global_rank: e.global_rank || null,
       tier_level: e.tier_level || 'unranked',
     }));
@@ -197,18 +198,15 @@ serve(async (req) => {
       await supabase.from('application_rankings').insert(inserts.slice(i, i + 50));
     }
 
-    // --- AUTO-PROMOTION ---
-    // Promote country top 3 (national stage, scored) → continental
-    // Promote continental top 3 → regional
-    // Promote regional top 3 → global
+    // ===== AUTO-PROMOTION: National → Regional → Continental → Global =====
     let promotedCount = 0;
     const allSubs = submissions || [];
     const subMap = Object.fromEntries(allSubs.map(s => [s.id, s]));
 
-    const stagePromotions: { fromStage: string; toStage: string; rankField: keyof RankEntry }[] = [
-      { fromStage: 'national', toStage: 'continental', rankField: 'country_rank' },
-      { fromStage: 'continental', toStage: 'regional', rankField: 'continental_rank' },
-      { fromStage: 'regional', toStage: 'global', rankField: 'regional_rank' },
+    const stagePromotions: { fromStage: string; toStage: string; rankField: keyof RankEntry; topN: number }[] = [
+      { fromStage: 'national', toStage: 'regional', rankField: 'country_rank', topN: 3 },
+      { fromStage: 'regional', toStage: 'continental', rankField: 'regional_rank', topN: 50 },
+      { fromStage: 'continental', toStage: 'global', rankField: 'continental_rank', topN: 100 },
     ];
 
     for (const promo of stagePromotions) {
@@ -216,10 +214,9 @@ serve(async (req) => {
         const sub = subMap[e.submission_id];
         if (!sub) return false;
         const rank = e[promo.rankField] as number | undefined;
-        return sub.stage === promo.fromStage && sub.status === 'scored' && rank != null && rank <= 3;
+        return sub.stage === promo.fromStage && sub.status === 'scored' && rank != null && rank <= promo.topN;
       });
 
-      // Deduplicate by submission_id (a sub may appear in multiple categories)
       const seen = new Set<string>();
       for (const entry of eligible) {
         if (seen.has(entry.submission_id)) continue;
@@ -228,12 +225,11 @@ serve(async (req) => {
         const sub = subMap[entry.submission_id];
         if (!sub) continue;
 
-        // Check if already promoted (child exists)
+        // Check if already promoted
         const existing = allSubs.find(s => s.parent_submission_id === sub.id && s.stage === promo.toStage);
         if (existing) continue;
 
-        // Create promoted clone
-        // Calculate parent's average score to carry forward
+        // Calculate parent avg score to carry forward
         const parentScores = (allScores || []).filter(s => s.submission_id === sub.id);
         const parentAvg = parentScores.length > 0
           ? Math.round(parentScores.reduce((a, s) => a + (s.overall_score || 0), 0) / parentScores.length * 100) / 100
@@ -265,14 +261,12 @@ serve(async (req) => {
         });
 
         if (!error) {
-          // Mark original as winner
           await supabase.from('submissions').update({ status: 'winner' }).eq('id', sub.id);
           
-          // Notify applicant
           await supabase.from('notifications').insert({
             user_id: sub.submitter_id,
             title: `🏆 ${promo.fromStage.charAt(0).toUpperCase() + promo.fromStage.slice(1)} Winner — Promoted to ${promo.toStage.charAt(0).toUpperCase() + promo.toStage.slice(1)}!`,
-            message: `Congratulations! ${sub.school_name} ranked in the Top 3 at the ${promo.fromStage} level and has been automatically promoted to the ${promo.toStage} stage.`,
+            message: `Congratulations! ${sub.school_name} ranked in the Top ${promo.topN} at the ${promo.fromStage} level and has been automatically promoted to the ${promo.toStage} stage.`,
             type: 'success',
           });
           
@@ -286,6 +280,10 @@ serve(async (req) => {
       ranked: entries.length,
       promoted: promotedCount,
       summary: {
+        national: entries.filter(e => e.country_rank != null).length,
+        regional: entries.filter(e => e.regional_rank != null).length,
+        continental: entries.filter(e => e.continental_rank != null).length,
+        global: entries.filter(e => e.global_rank != null).length,
         gold: entries.filter(e => e.tier_level === 'gold').length,
         silver: entries.filter(e => e.tier_level === 'silver').length,
         bronze: entries.filter(e => e.tier_level === 'bronze').length,

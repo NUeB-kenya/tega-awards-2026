@@ -20,6 +20,10 @@ import SecretariatUsers from "./pages/SecretariatUsers";
 import SecretariatStatistics from "./pages/SecretariatStatistics";
 import SecretariatJudgeWorkRate from "./pages/SecretariatJudgeWorkRate";
 import Rankings from "./pages/Rankings";
+import NationalRankings from "./pages/NationalRankings";
+import RegionalRankings from "./pages/RegionalRankings";
+import ContinentalRankings from "./pages/ContinentalRankings";
+import GlobalRankings from "./pages/GlobalRankings";
 import AdminApprovals from "./pages/AdminApprovals";
 import AdminJudgeApprovals from "./pages/AdminJudgeApprovals";
 import AdminMessaging from "./pages/AdminMessaging";
@@ -62,12 +66,20 @@ const App = () => (
           <Route path="/secretariat/statistics" element={<ProtectedRoute allowedRoles={['secretariat', 'super_admin']}><SecretariatStatistics /></ProtectedRoute>} />
           <Route path="/secretariat/judge-work-rate" element={<ProtectedRoute allowedRoles={['secretariat', 'super_admin']}><SecretariatJudgeWorkRate /></ProtectedRoute>} />
           <Route path="/secretariat/rankings" element={<ProtectedRoute allowedRoles={['secretariat', 'super_admin']}><Rankings /></ProtectedRoute>} />
+          <Route path="/secretariat/rankings/national" element={<ProtectedRoute allowedRoles={['secretariat', 'super_admin']}><NationalRankings /></ProtectedRoute>} />
+          <Route path="/secretariat/rankings/regional" element={<ProtectedRoute allowedRoles={['secretariat', 'super_admin']}><RegionalRankings /></ProtectedRoute>} />
+          <Route path="/secretariat/rankings/continental" element={<ProtectedRoute allowedRoles={['secretariat', 'super_admin']}><ContinentalRankings /></ProtectedRoute>} />
+          <Route path="/secretariat/rankings/global" element={<ProtectedRoute allowedRoles={['secretariat', 'super_admin']}><GlobalRankings /></ProtectedRoute>} />
           <Route path="/admin/approvals" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><AdminApprovals /></ProtectedRoute>} />
           <Route path="/admin/judge-applications" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><AdminJudgeApprovals /></ProtectedRoute>} />
           <Route path="/admin/submissions" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><SecretariatSubmissions /></ProtectedRoute>} />
           <Route path="/admin/messaging" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><AdminMessaging /></ProtectedRoute>} />
           <Route path="/admin/finance" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><AdminFinance /></ProtectedRoute>} />
           <Route path="/admin/rankings" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><Rankings /></ProtectedRoute>} />
+          <Route path="/admin/rankings/national" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><NationalRankings /></ProtectedRoute>} />
+          <Route path="/admin/rankings/regional" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><RegionalRankings /></ProtectedRoute>} />
+          <Route path="/admin/rankings/continental" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><ContinentalRankings /></ProtectedRoute>} />
+          <Route path="/admin/rankings/global" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><GlobalRankings /></ProtectedRoute>} />
           <Route path="/admin/scores" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><SecretariatScores /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="*" element={<NotFound />} />

@@ -280,15 +280,15 @@ export default function SecretariatRouting() {
           </div>
         </div>
         <p className="mb-8 text-muted-foreground">
-          Rankings are computed live. Top 3 per country → Continental → Regional → Global. Click <strong>Recalculate & Auto-Promote</strong> to rank all scored submissions and automatically promote top 3 winners at each tier. Use <strong>Declare Winners</strong> to officially announce winners at any stage.
+          Rankings are computed live. Top 3 per country → Regional → Continental → Global. Click <strong>Recalculate & Auto-Promote</strong> to rank all scored submissions and automatically promote winners at each tier. Use <strong>Declare Winners</strong> to officially announce winners at any stage.
         </p>
 
         {/* 4-tier summary */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
           {[
             { label: 'National (Scored)', count: national.length, icon: Star, color: 'text-primary' },
-            { label: 'Continental', count: continental.length, icon: Map, color: 'text-accent' },
-            { label: 'Regional', count: regional.length, icon: Globe, color: 'text-warning' },
+            { label: 'Regional', count: regional.length, icon: Map, color: 'text-warning' },
+            { label: 'Continental', count: continental.length, icon: Globe, color: 'text-accent' },
             { label: 'Global', count: globalSubs.length, icon: Trophy, color: 'text-success' },
             { label: 'Winners', count: winners.length, icon: Trophy, color: 'text-success' },
           ].map(s => (
@@ -396,7 +396,7 @@ export default function SecretariatRouting() {
                     </TableBody>
                   </Table>
                   {eligible.length > 0 && (
-                    <p className="text-xs text-muted-foreground mt-2">★ Top 3 auto-promoted to Continental on recalculation · Select entries and click <strong>Declare Winners</strong> to officially announce</p>
+                    <p className="text-xs text-muted-foreground mt-2">★ Top 3 auto-promoted to Regional on recalculation · Select entries and click <strong>Declare Winners</strong> to officially announce</p>
                   )}
                 </CardContent>
               </Card>
@@ -404,18 +404,18 @@ export default function SecretariatRouting() {
           })
         )}
 
-        {/* Continental */}
-        <h2 className="font-display text-xl font-bold mb-4 mt-8">🌍 Continental Stage</h2>
-        {continental.length > 0
-          ? renderStageTable(continental, 'Continental Submissions', 'continental')
-          : <Card className="glass-card py-8 text-center mb-8"><p className="text-muted-foreground">No continental-stage submissions yet.</p></Card>
-        }
-
         {/* Regional */}
         <h2 className="font-display text-xl font-bold mb-4 mt-8">🗺️ Regional Stage</h2>
         {regional.length > 0
           ? renderStageTable(regional, 'Regional Submissions', 'regional')
           : <Card className="glass-card py-8 text-center mb-8"><p className="text-muted-foreground">No regional-stage submissions yet.</p></Card>
+        }
+
+        {/* Continental */}
+        <h2 className="font-display text-xl font-bold mb-4 mt-8">🌍 Continental Stage</h2>
+        {continental.length > 0
+          ? renderStageTable(continental, 'Continental Submissions', 'continental')
+          : <Card className="glass-card py-8 text-center mb-8"><p className="text-muted-foreground">No continental-stage submissions yet.</p></Card>
         }
 
         {/* Global */}

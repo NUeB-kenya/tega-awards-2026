@@ -75,8 +75,15 @@ export default function AdminDashboard() {
 
   const saveFee = async () => {
     const key = editFee.type === 'submission' ? 'submission_fee' : 'approval_fee';
-    await (supabase.from('platform_settings' as any) as any).update({ value: { amount: Number(editFee.amount), currency: editFee.currency } }).eq('key', key);
-    setFeeSettings((prev: any) => ({ ...prev, [key]: { amount: Number(editFee.amount), currency: editFee.currency } }));
+    const newValue = { amount: Number(editFee.amount), currency: editFee.currency };
+    // Use upsert: try update first, if no rows matched, insert
+    const { data: existing } = await (supabase.from('platform_settings' as any) as any).select('id').eq('key', key).maybeSingle();
+    if (existing) {
+      await (supabase.from('platform_settings' as any) as any).update({ value: newValue, updated_at: new Date().toISOString() }).eq('key', key);
+    } else {
+      await (supabase.from('platform_settings' as any) as any).insert({ key, value: newValue });
+    }
+    setFeeSettings((prev: any) => ({ ...prev, [key]: newValue }));
     setShowFeeDialog(false);
     toast({ title: 'Fee updated successfully' });
   };

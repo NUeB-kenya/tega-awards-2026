@@ -287,8 +287,8 @@ export default function SecretariatRouting() {
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
           {[
             { label: 'National (Scored)', count: national.length, icon: Star, color: 'text-primary' },
-            { label: 'Continental', count: continental.length, icon: Map, color: 'text-accent' },
-            { label: 'Regional', count: regional.length, icon: Globe, color: 'text-warning' },
+            { label: 'Regional', count: regional.length, icon: Map, color: 'text-warning' },
+            { label: 'Continental', count: continental.length, icon: Globe, color: 'text-accent' },
             { label: 'Global', count: globalSubs.length, icon: Trophy, color: 'text-success' },
             { label: 'Winners', count: winners.length, icon: Trophy, color: 'text-success' },
           ].map(s => (

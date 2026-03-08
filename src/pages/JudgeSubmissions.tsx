@@ -44,6 +44,58 @@ const defaultScoreForm: ScoreFormType = {
   verification_source: '', verification_notes: '', comments: '',
 };
 
+function DocumentsPanel({ submissionId, category }: { submissionId: string; category: string }) {
+  const [docs, setDocs] = useState<any[]>([]);
+  const [urls, setUrls] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    supabase.from('submission_documents').select('*').eq('submission_id', submissionId)
+      .then(({ data }) => {
+        // Filter docs matching category, or show all if no match
+        const catDocs = (data || []).filter(d => d.category?.toLowerCase() === category?.toLowerCase());
+        setDocs(catDocs.length > 0 ? catDocs : (data || []));
+        setLoading(false);
+      });
+  }, [submissionId, category]);
+
+  const getUrl = async (path: string) => {
+    if (urls[path]) return;
+    const { data } = await supabase.storage.from('documents').createSignedUrl(path, 3600);
+    if (data?.signedUrl) setUrls(prev => ({ ...prev, [path]: data.signedUrl }));
+  };
+
+  if (loading) return <p className="text-xs text-muted-foreground">Loading documents...</p>;
+  if (docs.length === 0) return <p className="text-xs text-muted-foreground">No documents for this category.</p>;
+
+  return (
+    <div className="space-y-2">
+      <h3 className="font-semibold text-sm flex items-center gap-2"><FileText className="h-4 w-4 text-primary" /> Submitted Documents</h3>
+      <div className="grid gap-2">
+        {docs.map(doc => {
+          if (!urls[doc.file_path]) getUrl(doc.file_path);
+          return (
+            <div key={doc.id} className="flex items-center justify-between bg-secondary/50 rounded-lg p-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <FileText className="h-3.5 w-3.5 text-primary shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-xs font-medium truncate">{doc.file_name}</p>
+                  <p className="text-[10px] text-muted-foreground">{doc.category} · {doc.file_size ? Math.round(doc.file_size / 1024) + 'KB' : ''}</p>
+                </div>
+              </div>
+              {urls[doc.file_path] ? (
+                <a href={urls[doc.file_path]} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline shrink-0">Open</a>
+              ) : (
+                <span className="text-[10px] text-muted-foreground">Loading...</span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function JudgeSubmissions() {
   const { user, profile } = useAuth();
   const { toast } = useToast();
@@ -521,6 +573,9 @@ export default function JudgeSubmissions() {
                           </div>
                         )}
                       </div>
+
+                      {/* Documents for this category */}
+                      <DocumentsPanel submissionId={scoringId!} category={cat} />
 
                       {/* Document verification */}
                       <div className="space-y-4">

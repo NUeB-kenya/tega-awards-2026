@@ -470,11 +470,12 @@ export default function JudgeSubmissions() {
                   const totalCats = sub.award_categories?.length || 0;
                   const scoredCats = getCategoryScoredCount(sub.id);
                   const allScored = totalCats > 0 && scoredCats >= totalCats;
-                  const isAlreadyScored = sub.status === 'scored' || sub.status === 'winner' || sub.status === 'finalist';
+                  const isAlreadyScored = sub.status === 'scored' || sub.status === 'winner' || sub.status === 'finalist' || sub.average_score != null;
                   const isDeferred = sub.screening_notes?.startsWith('DEFERRED:');
+                  const hasAnyAssignment = !!assignment;
 
                   // Judges can only pick unscored, unassigned submissions
-                  const canPick = isEligibleForScoring && !isAssignedToMe && !isAssignedToOther && !isAlreadyScored;
+                  const canPick = isEligibleForScoring && !hasAnyAssignment && !isAlreadyScored;
                   // Re-score allowed max 2 times (unless deferred by secretariat)
                   const myScoreCount = (scores[sub.id] || []).length;
                   const rescoreLimit = isDeferred ? Infinity : 2;
@@ -508,7 +509,7 @@ export default function JudgeSubmissions() {
                           )}
                         </div>
                         <div className="flex items-center gap-2">
-                          {isAssignedToOther || (isAlreadyScored && !isAssignedToMe) ? (
+                          {(isAssignedToOther || (isAlreadyScored && !isAssignedToMe)) ? (
                             <Badge className="bg-destructive/20 text-destructive border-0 gap-1">
                               <Lock className="h-3 w-3" /> {isAlreadyScored ? 'Already judged' : 'Assigned to another judge'}
                             </Badge>

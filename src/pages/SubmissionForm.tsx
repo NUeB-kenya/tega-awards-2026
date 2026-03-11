@@ -408,7 +408,7 @@ export default function SubmissionForm() {
   const handlePayment = async () => {
     if (!existingSubmission || !user) return;
     setProcessingPayment(true);
-    const callbackUrl = `${window.location.origin}/submissions/new?payment=verify`;
+    const callbackUrl = `https://portal.transformingeducation.ac/submissions/new?payment=verify`;
     const { data, error } = await supabase.functions.invoke('initialize-payment', {
       body: {
         submissionId: existingSubmission.id,

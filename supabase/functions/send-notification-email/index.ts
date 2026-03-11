@@ -95,7 +95,7 @@ serve(async (req) => {
             <li>Prepare your acceptance remarks</li>
           </ul>
           <div style="text-align: center; margin: 30px 0;">
-            <a href="https://tega2026.lovable.app/dashboard" style="background: #D4A017; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold;">View Your Dashboard</a>
+            <a href="https://portal.transformingeducation.ac/dashboard" style="background: #D4A017; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold;">View Your Dashboard</a>
           </div>
           <p style="margin-top: 30px; color: #888; text-align: center;">— The TEGA Awards Secretariat</p>
         </div>

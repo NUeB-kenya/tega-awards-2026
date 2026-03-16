@@ -1,15 +1,28 @@
-export default function NotFound() {
-  return (
-    <div className="flex flex-col items-center justify-center h-screen bg-gray-50 text-center p-4">
-      <img src="/tega-logo.png" alt="TEGA Logo" className="w-32 mb-6" />
-      <h1 className="text-3xl font-bold mb-2">We ran into a little proble!</h1>
-      <p className="mb-4"> It is on our end, not yours. Please return to main Menu.</p>
-      <a
-        href="https://portal.transformingeducation.ac"
-        className="px-6 py-3 bg-yellow-400 hover:bg-yellow-500 rounded-lg font-semibold"
-      >
-        Return to Portal
-      </a>
-    </div>
-  );
-}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TEGA Awards Portal</title>
+  <link rel="icon" type="image/png" href="/favicon.png" />
+  <script>
+    // SPA redirect for Netlify - redirects all 404s back to the SPA
+    var pathSegmentsToKeep = 0;
+    var l = window.location;
+    l.replace(
+      l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
+      l.pathname.split('/').slice(0, 1 + pathSegmentsToKeep).join('/') + '/?/' +
+      l.pathname.slice(1).split('/').slice(pathSegmentsToKeep).join('/').replace(/&/g, '~and~') +
+      (l.search ? '&' + l.search.slice(1).replace(/&/g, '~and~') : '') +
+      l.hash
+    );
+  </script>
+</head>
+<body>
+  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:Arial,sans-serif;background:#0a0a0a;color:#fff;text-align:center;padding:20px;">
+    <img src="/tega-logo.png" alt="TEGA Logo" style="width:128px;margin-bottom:24px;" />
+    <h1 style="font-size:24px;margin-bottom:8px;">Redirecting...</h1>
+    <p style="color:#888;">If you are not redirected, <a href="https://portal.transformingeducation.ac" style="color:#D4A017;">click here</a>.</p>
+  </div>
+</body>
+</html>

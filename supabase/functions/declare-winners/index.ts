@@ -60,11 +60,11 @@ serve(async (req) => {
       const stageLabel = (sub.stage || 'national').charAt(0).toUpperCase() + (sub.stage || 'national').slice(1);
       const categories = (sub.award_categories || []).join(', ') || 'General';
 
-      // In-app notification
+      // In-app notification — specific to this winner's categories
       await supabase.from('notifications').insert({
         user_id: sub.submitter_id,
         title: `🏆 Congratulations — ${stageLabel} Winner!`,
-        message: `We are delighted to announce that ${sub.school_name} (${sub.school_country}) has been officially declared a ${stageLabel} Winner of the TEGA Awards in ${categories}!\n\nThis is a remarkable achievement that recognizes your institution's exceptional contribution to education transformation.\n\nPlease log in to your dashboard for more details about the awards ceremony and next steps.`,
+        message: `We are delighted to announce that ${sub.school_name} (${sub.school_country}) has been officially declared a ${stageLabel} Winner of the TEGA Awards in the following ${(sub.award_categories || []).length > 1 ? 'categories' : 'category'}:\n\n${(sub.award_categories || []).map((c: string, i: number) => `${i + 1}. ${c}`).join('\n')}\n\nThis is a remarkable achievement that recognizes your institution's exceptional contribution to education transformation.\n\nPlease log in to your dashboard for more details about the awards ceremony and next steps.`,
         type: 'success',
         link: '/dashboard',
       });

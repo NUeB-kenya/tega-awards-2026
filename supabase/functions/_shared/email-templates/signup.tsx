@@ -1,0 +1,64 @@
+/// <reference types="npm:@types/react@18.3.1" />
+
+import * as React from 'npm:react@18.3.1'
+
+import {
+  Body,
+  Button,
+  Container,
+  Head,
+  Heading,
+  Html,
+  Img,
+  Link,
+  Preview,
+  Text,
+} from 'npm:@react-email/components@0.0.22'
+
+interface SignupEmailProps {
+  siteName: string
+  siteUrl: string
+  recipient: string
+  confirmationUrl: string
+}
+
+const LOGO_URL = 'https://tqagkqiodmegvfdycwtq.supabase.co/storage/v1/object/public/email-assets/tega-logo.png'
+
+export const SignupEmail = ({
+  siteName,
+  siteUrl,
+  recipient,
+  confirmationUrl,
+}: SignupEmailProps) => (
+  <Html lang="en" dir="ltr">
+    <Head />
+    <Preview>Verify your email for the TEGA Awards Portal</Preview>
+    <Body style={main}>
+      <Container style={container}>
+        <Img src={LOGO_URL} alt="TEGA Awards" width="140" height="auto" style={{ marginBottom: '24px' }} />
+        <Heading style={h1}>Verify Your Email</Heading>
+        <Text style={text}>
+          Thank you for creating an account on the{' '}
+          <Link href={siteUrl} style={link}><strong>TEGA Awards Portal</strong></Link>.
+        </Text>
+        <Text style={text}>
+          Please confirm your email address (<Link href={`mailto:${recipient}`} style={link}>{recipient}</Link>) by clicking the button below:
+        </Text>
+        <Button style={button} href={confirmationUrl}>Verify Email</Button>
+        <Text style={footer}>If you didn't create an account, you can safely ignore this email.</Text>
+        <Text style={footerBrand}>— The TEGA Awards Secretariat</Text>
+      </Container>
+    </Body>
+  </Html>
+)
+
+export default SignupEmail
+
+const main = { backgroundColor: '#ffffff', fontFamily: "'Inter', Arial, sans-serif" }
+const container = { padding: '30px 25px' }
+const h1 = { fontSize: '24px', fontWeight: 'bold' as const, color: '#1a1d2b', margin: '0 0 20px' }
+const text = { fontSize: '15px', color: '#555555', lineHeight: '1.6', margin: '0 0 20px' }
+const link = { color: '#D4A017', textDecoration: 'underline' }
+const button = { backgroundColor: '#D4A017', color: '#1a1d2b', fontSize: '15px', fontWeight: 'bold' as const, borderRadius: '12px', padding: '14px 28px', textDecoration: 'none' }
+const footer = { fontSize: '12px', color: '#999999', margin: '30px 0 0' }
+const footerBrand = { fontSize: '13px', color: '#D4A017', margin: '10px 0 0', fontStyle: 'italic' as const }

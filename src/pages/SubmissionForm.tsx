@@ -327,8 +327,14 @@ export default function SubmissionForm() {
 
   const handleNominations = async () => {
     for (const cat of selectedCategories) {
-      if (!nominationStatements[cat]?.trim()) {
+      const text = nominationStatements[cat]?.trim() || '';
+      if (!text) {
         toast({ title: `Nomination statement required for "${cat}"`, variant: 'destructive' });
+        return;
+      }
+      const wordCount = text.split(/\s+/).filter(Boolean).length;
+      if (wordCount < 200) {
+        toast({ title: `"${cat}" needs at least 200 words (currently ${wordCount})`, variant: 'destructive' });
         return;
       }
     }

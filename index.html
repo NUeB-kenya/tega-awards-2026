@@ -18,6 +18,19 @@
   <meta name="twitter:image" content="https://storage.googleapis.com/gpt-engineer-file-uploads/FGSdujaMTLRd5GH7jbV4YYLN2IB2/social-images/social-1772178691963-TEGA_Logo-removebg-preview.webp">
 </head>
   <body>
+    <!-- SPA redirect handler for Netlify 404 workaround -->
+    <script type="text/javascript">
+      (function(l) {
+        if (l.search[1] === '/' ) {
+          var decoded = l.search.slice(1).split('&').map(function(s) { 
+            return s.replace(/~and~/g, '&')
+          }).join('?');
+          window.history.replaceState(null, null,
+            l.pathname.slice(0, -1) + decoded + l.hash
+          );
+        }
+      }(window.location))
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

@@ -35,7 +35,7 @@ export default function SecretariatScores() {
       const { data } = await supabase
         .from('scores')
         .select('*, submissions(school_name, school_country, award_categories)')
-        .order('created_at', { ascending: false });
+        .order('overall_score', { ascending: false });
 
       if (data?.length) {
         const judgeIds = [...new Set(data.map(s => s.judge_id))];

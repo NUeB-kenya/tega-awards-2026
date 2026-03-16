@@ -509,9 +509,13 @@ export default function JudgeSubmissions() {
                           )}
                         </div>
                         <div className="flex items-center gap-2">
-                          {(isAssignedToOther || (isAlreadyScored && !isAssignedToMe)) ? (
+                          {isAssignedToOther ? (
                             <Badge className="bg-destructive/20 text-destructive border-0 gap-1">
-                              <Lock className="h-3 w-3" /> {isAlreadyScored ? 'Already judged' : 'Assigned to another judge'}
+                              <Lock className="h-3 w-3" /> Already Picked
+                            </Badge>
+                          ) : isAlreadyScored && !isAssignedToMe ? (
+                            <Badge className="bg-muted text-muted-foreground border-0 gap-1">
+                              <Lock className="h-3 w-3" /> Already Judged
                             </Badge>
                           ) : (
                             <>

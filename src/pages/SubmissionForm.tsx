@@ -617,23 +617,27 @@ export default function SubmissionForm() {
             <Card className="glass-card">
               <CardHeader>
                 <CardTitle className="font-display">Nomination Statements</CardTitle>
-                <p className="text-sm text-muted-foreground">Write a nomination statement for each selected category (max 600 characters each).</p>
+                <p className="text-sm text-muted-foreground">Write a nomination statement for each selected category (minimum 200 words, recommended 600 words).</p>
               </CardHeader>
               <CardContent className="space-y-6">
-                {selectedCategories.map((cat, i) => (
-                  <div key={cat} className="space-y-2">
-                    <Label className="text-sm font-semibold">Category {i + 1}: {cat}</Label>
-                    <Textarea
-                      required
-                      maxLength={600}
-                      value={nominationStatements[cat] || ''}
-                      onChange={e => setNominationStatements(prev => ({ ...prev, [cat]: e.target.value }))}
-                      className="min-h-[120px] bg-secondary"
-                      placeholder={`Describe why this nomination deserves recognition in "${cat}"...`}
-                    />
-                    <p className="text-xs text-muted-foreground text-right">{(nominationStatements[cat] || '').length}/600</p>
-                  </div>
-                ))}
+                {selectedCategories.map((cat, i) => {
+                  const wordCount = (nominationStatements[cat] || '').trim().split(/\s+/).filter(Boolean).length;
+                  return (
+                    <div key={cat} className="space-y-2">
+                      <Label className="text-sm font-semibold">Category {i + 1}: {cat}</Label>
+                      <Textarea
+                        required
+                        value={nominationStatements[cat] || ''}
+                        onChange={e => setNominationStatements(prev => ({ ...prev, [cat]: e.target.value }))}
+                        className="min-h-[200px] bg-secondary"
+                        placeholder={`Describe why this nomination deserves recognition in "${cat}"... (minimum 200 words)`}
+                      />
+                      <p className={`text-xs text-right ${wordCount < 200 ? 'text-destructive' : 'text-muted-foreground'}`}>
+                        {wordCount} word{wordCount !== 1 ? 's' : ''} {wordCount < 200 ? `(${200 - wordCount} more needed)` : '✓'}
+                      </p>
+                    </div>
+                  );
+                })}
               </CardContent>
             </Card>
             <div className="flex gap-4">

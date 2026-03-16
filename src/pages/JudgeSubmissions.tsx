@@ -781,8 +781,17 @@ export default function JudgeSubmissions() {
                         <p className="text-muted-foreground text-xs">{getScoreBand(getOverallScore(scoreForm))}</p>
                       </div>
 
-                      <Button className="w-full bg-gradient-gold font-semibold" onClick={handleScoreCategory}>
-                        Save Score for "{cat.length > 40 ? cat.slice(0, 40) + '…' : cat}"
+                      <Button className="w-full bg-gradient-gold font-semibold" onClick={async () => {
+                        await handleScoreCategory();
+                        // Check if all categories are now scored to close dialog
+                        const cats = scoringSub?.award_categories || [];
+                        const subScores = scores[scoringId!] || [];
+                        const allDone = cats.every((c: string) => c === scoringCategory || subScores.some((s: any) => s.category_name === c));
+                        if (allDone) {
+                          setTimeout(() => setScoringId(null), 500);
+                        }
+                      }}>
+                        Submit to Secretariat — "{cat.length > 30 ? cat.slice(0, 30) + '…' : cat}"
                       </Button>
                     </TabsContent>
                   ))}

@@ -26,6 +26,7 @@ const SCORE_BANDS = [
 export default function JudgeDashboard() {
   const { user, profile } = useAuth();
   const [stats, setStats] = useState({ assigned: 0, scored: 0, pending: 0, conflicts: 0 });
+  const [coiDeclarations, setCoiDeclarations] = useState<any[]>([]);
 
   useEffect(() => {
     if (!user) return;
@@ -33,7 +34,7 @@ export default function JudgeDashboard() {
       const [assignRes, scoresRes, conflictRes] = await Promise.all([
         supabase.from('judge_assignments').select('id, status').eq('judge_id', user.id),
         supabase.from('scores').select('id').eq('judge_id', user.id),
-        supabase.from('conflict_declarations').select('id').eq('judge_id', user.id),
+        supabase.from('conflict_declarations').select('*, submissions(school_name, school_country)').eq('judge_id', user.id),
       ]);
       const assignments = assignRes.data || [];
       const scoredCount = scoresRes.data?.length || 0;
@@ -43,6 +44,7 @@ export default function JudgeDashboard() {
         pending: assignments.filter(a => a.status !== 'completed').length,
         conflicts: conflictRes.data?.length || 0,
       });
+      setCoiDeclarations(conflictRes.data || []);
     };
     fetchStats();
   }, [user]);
@@ -79,6 +81,32 @@ export default function JudgeDashboard() {
           );
         })}
       </div>
+
+      {/* COI Declarations - prominent display */}
+      {coiDeclarations.length > 0 && (
+        <Card className="glass-card border-warning/30">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-warning" />
+              <CardTitle className="font-display text-lg">Your Conflict of Interest Declarations</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {coiDeclarations.map((coi: any) => (
+              <div key={coi.id} className="bg-warning/10 rounded-lg p-3 flex items-start justify-between">
+                <div>
+                  <p className="text-sm font-semibold">{(coi.submissions as any)?.school_name || 'Unknown School'}</p>
+                  <p className="text-xs text-muted-foreground">{(coi.submissions as any)?.school_country}</p>
+                  <p className="text-xs mt-1">{coi.conflict_reason}</p>
+                </div>
+                <Badge className={`${coi.resolved ? 'bg-success/20 text-success' : 'bg-warning/20 text-warning'} border-0 text-xs`}>
+                  {coi.resolved ? 'Resolved' : 'Active'}
+                </Badge>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Scoring Rubric Reference */}
       <Card className="glass-card">

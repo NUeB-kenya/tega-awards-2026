@@ -316,7 +316,7 @@ export default function JudgeOnboarding({ existingApplication, applicationType }
       <Card className="glass-card">
         <CardHeader>
           <CardTitle className="font-display">Categories You Can Evaluate *</CardTitle>
-          <p className="text-sm text-muted-foreground">Select at least 5 award categories you are qualified to judge. ({form.expertise_categories.length}/14 selected)</p>
+          <p className="text-sm text-muted-foreground">Select exactly 5 award categories you are qualified to judge. ({form.expertise_categories.length}/5 selected){form.expertise_categories.length >= 5 && ' ✅ Maximum reached'}</p>
         </CardHeader>
         <CardContent>
           <div className="grid gap-2 sm:grid-cols-2">

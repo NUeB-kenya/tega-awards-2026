@@ -66,12 +66,13 @@ export default function JudgeOnboarding({ existingApplication, applicationType }
   const updateField = (key: string, value: any) => setForm(p => ({ ...p, [key]: value }));
 
   const toggleCategory = (cat: string) => {
-    setForm(p => ({
-      ...p,
-      expertise_categories: p.expertise_categories.includes(cat)
-        ? p.expertise_categories.filter((c: string) => c !== cat)
-        : [...p.expertise_categories, cat],
-    }));
+    setForm(p => {
+      if (p.expertise_categories.includes(cat)) {
+        return { ...p, expertise_categories: p.expertise_categories.filter((c: string) => c !== cat) };
+      }
+      if (p.expertise_categories.length >= 5) return p; // Max 5 categories
+      return { ...p, expertise_categories: [...p.expertise_categories, cat] };
+    });
   };
 
   if (existingApplication?.status === 'pending') {

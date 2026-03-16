@@ -69,7 +69,7 @@ serve(async (req) => {
         link: '/dashboard',
       });
 
-      // Send notification email
+      // Send notification email with specific winner categories
       if (profile?.email) {
         try {
           await supabase.functions.invoke('send-notification-email', {
@@ -77,6 +77,10 @@ serve(async (req) => {
               submissionId: sub.id,
               status: 'winner',
               userId: sub.submitter_id,
+              winnerCategories: sub.award_categories || [],
+              schoolName: sub.school_name,
+              schoolCountry: sub.school_country,
+              stage: stageLabel,
             },
           });
         } catch (emailErr) {

@@ -320,18 +320,23 @@ export default function JudgeOnboarding({ existingApplication, applicationType }
         </CardHeader>
         <CardContent>
           <div className="grid gap-2 sm:grid-cols-2">
-            {ALL_CATEGORIES.map(cat => (
-              <label key={cat} className={`flex items-start gap-3 rounded-lg p-3 cursor-pointer transition-colors ${
-                form.expertise_categories.includes(cat) ? 'bg-primary/10 border border-primary/30' : 'bg-secondary/50 border border-transparent hover:border-border'
-              }`}>
-                <Checkbox
-                  checked={form.expertise_categories.includes(cat)}
-                  onCheckedChange={() => toggleCategory(cat)}
-                  className="mt-0.5"
-                />
-                <span className="text-sm">{cat}</span>
-              </label>
-            ))}
+            {ALL_CATEGORIES.map(cat => {
+              const isSelected = form.expertise_categories.includes(cat);
+              const isDisabled = !isSelected && form.expertise_categories.length >= 5;
+              return (
+                <label key={cat} className={`flex items-start gap-3 rounded-lg p-3 transition-colors ${
+                  isSelected ? 'bg-primary/10 border border-primary/30 cursor-pointer' : isDisabled ? 'bg-secondary/30 border border-transparent opacity-50 cursor-not-allowed' : 'bg-secondary/50 border border-transparent hover:border-border cursor-pointer'
+                }`}>
+                  <Checkbox
+                    checked={isSelected}
+                    onCheckedChange={() => toggleCategory(cat)}
+                    className="mt-0.5"
+                    disabled={isDisabled}
+                  />
+                  <span className="text-sm">{cat}</span>
+                </label>
+              );
+            })}
           </div>
           {form.expertise_categories.length > 0 && form.expertise_categories.length < 5 && (
             <p className="text-xs text-destructive mt-2">Please select at least 5 categories ({5 - form.expertise_categories.length} more needed)</p>

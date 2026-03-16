@@ -177,7 +177,12 @@ export default function Auth() {
                       </SelectTrigger>
                       <SelectContent>
                         {SIGNUP_TYPES.map(t => (
-                          <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                          <SelectItem key={t.value} value={t.value}>
+                            <div>
+                              <span className="font-medium">{t.label}</span>
+                              <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">{t.desc}</p>
+                            </div>
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>

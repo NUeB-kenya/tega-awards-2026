@@ -23,10 +23,10 @@ interface CountryOption {
 }
 
 const SIGNUP_TYPES = [
-  { value: 'applicant', label: 'School / Organisation' },
-  { value: 'individual', label: 'Individual' },
-  { value: 'judge', label: 'Country Judge' },
-  { value: 'country_representative', label: 'Country Representative' },
+  { value: 'applicant', label: 'School / Organisation', desc: 'Submit an award application on behalf of a school or institution' },
+  { value: 'individual', label: 'Individual', desc: 'Submit a personal nomination for an education award' },
+  { value: 'judge', label: 'Country Judge', desc: 'Volunteer to evaluate and score submissions from your country' },
+  { value: 'country_representative', label: 'Country Representative', desc: 'Coordinate and oversee the awards process for your country' },
 ];
 
 export default function Auth() {
@@ -177,7 +177,12 @@ export default function Auth() {
                       </SelectTrigger>
                       <SelectContent>
                         {SIGNUP_TYPES.map(t => (
-                          <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                          <SelectItem key={t.value} value={t.value}>
+                            <div>
+                              <span className="font-medium">{t.label}</span>
+                              <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">{t.desc}</p>
+                            </div>
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>

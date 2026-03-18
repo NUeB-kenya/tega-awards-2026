@@ -234,14 +234,15 @@ serve(async (req) => {
       group.forEach((e, i) => { e.global_rank = i + 1; });
     });
 
-    // Tier levels based on global rank
-    entries.forEach(e => {
+    // Tier levels based on global rank (only for entries ≥ passmark)
+    rankableEntries.forEach(e => {
       const rank = e.global_rank || e.continental_rank || e.regional_rank || e.country_rank || 999;
       if (rank <= 3) e.tier_level = 'gold';
       else if (rank <= 10) e.tier_level = 'silver';
       else if (rank <= 24) e.tier_level = 'bronze';
       else e.tier_level = 'unranked';
     });
+    belowPassmark.forEach(e => { e.tier_level = 'below_passmark'; });
 
     // Insert rankings
     const inserts = entries.map(e => ({

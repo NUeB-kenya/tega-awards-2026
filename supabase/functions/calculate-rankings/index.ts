@@ -182,10 +182,13 @@ serve(async (req) => {
     }
 
     // ===== RANKING HIERARCHY: National → Regional → Continental → Global =====
+    const PASSMARK = 80;
+    const rankableEntries = entries.filter(e => e.final_score >= PASSMARK);
+    const belowPassmark = entries.filter(e => e.final_score < PASSMARK);
 
-    // 1. COUNTRY RANK: per country+category, highest score = rank 1
+    // 1. COUNTRY RANK: per country+category, highest score = rank 1 (only ≥80)
     const byCountryCategory: Record<string, RankEntry[]> = {};
-    entries.forEach(e => {
+    rankableEntries.forEach(e => {
       const key = `${e.country_id}::${e.category_name}`;
       if (!byCountryCategory[key]) byCountryCategory[key] = [];
       byCountryCategory[key].push(e);
@@ -197,7 +200,7 @@ serve(async (req) => {
 
     // 2. REGIONAL RANK: Country top 3 → grouped by region+category, highest score = rank 1
     const byRegionCategory: Record<string, RankEntry[]> = {};
-    entries.filter(e => (e.country_rank || 999) <= 3).forEach(e => {
+    rankableEntries.filter(e => (e.country_rank || 999) <= 3).forEach(e => {
       const key = `${e.region}::${e.category_name}`;
       if (!byRegionCategory[key]) byRegionCategory[key] = [];
       byRegionCategory[key].push(e);

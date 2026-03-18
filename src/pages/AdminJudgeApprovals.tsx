@@ -47,7 +47,7 @@ export default function AdminJudgeApprovals() {
 
     // If approved, update user role to judge
     if (actionType === 'approve') {
-      await supabase.from('user_roles').update({ role: 'judge' as any }).eq('user_id', actionApp.user_id);
+      await supabase.from('user_roles').update({ role: 'judge' }).eq('user_id', actionApp.user_id);
       await supabase.from('notifications').insert({
         user_id: actionApp.user_id,
         title: '✅ Judge Application Approved!',

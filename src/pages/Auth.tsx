@@ -319,7 +319,7 @@ export default function Auth() {
                 e.preventDefault();
                 setResetSending(true);
                 const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
-                   redirectTo: 'https://tega2026.lovable.app/reset-password',
+                   redirectTo: 'https://portal.transformingeducation.ac/reset-password',
                  });
                 setResetSending(false);
                 if (error) {

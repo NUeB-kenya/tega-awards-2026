@@ -157,6 +157,7 @@ serve(async (req) => {
         );
 
         if (finalScore <= 0) continue;
+        // Only entries with score >= 80 get ranked; below 80 still stored but unranked
 
         entries.push({
           submission_id: sub.id,
@@ -181,10 +182,13 @@ serve(async (req) => {
     }
 
     // ===== RANKING HIERARCHY: National → Regional → Continental → Global =====
+    const PASSMARK = 80;
+    const rankableEntries = entries.filter(e => e.final_score >= PASSMARK);
+    const belowPassmark = entries.filter(e => e.final_score < PASSMARK);
 
-    // 1. COUNTRY RANK: per country+category, highest score = rank 1
+    // 1. COUNTRY RANK: per country+category, highest score = rank 1 (only ≥80)
     const byCountryCategory: Record<string, RankEntry[]> = {};
-    entries.forEach(e => {
+    rankableEntries.forEach(e => {
       const key = `${e.country_id}::${e.category_name}`;
       if (!byCountryCategory[key]) byCountryCategory[key] = [];
       byCountryCategory[key].push(e);
@@ -196,7 +200,7 @@ serve(async (req) => {
 
     // 2. REGIONAL RANK: Country top 3 → grouped by region+category, highest score = rank 1
     const byRegionCategory: Record<string, RankEntry[]> = {};
-    entries.filter(e => (e.country_rank || 999) <= 3).forEach(e => {
+    rankableEntries.filter(e => (e.country_rank || 999) <= 3).forEach(e => {
       const key = `${e.region}::${e.category_name}`;
       if (!byRegionCategory[key]) byRegionCategory[key] = [];
       byRegionCategory[key].push(e);
@@ -208,7 +212,7 @@ serve(async (req) => {
 
     // 3. CONTINENTAL RANK: Regional top 50 → grouped by continent+category, highest score = rank 1
     const byContinentCategory: Record<string, RankEntry[]> = {};
-    entries.filter(e => e.regional_rank != null && e.regional_rank <= 50).forEach(e => {
+    rankableEntries.filter(e => e.regional_rank != null && e.regional_rank <= 50).forEach(e => {
       const key = `${e.continent}::${e.category_name}`;
       if (!byContinentCategory[key]) byContinentCategory[key] = [];
       byContinentCategory[key].push(e);
@@ -220,7 +224,7 @@ serve(async (req) => {
 
     // 4. GLOBAL RANK: Continental top 100 → all in one pool per category, highest score = rank 1
     const byGlobalCategory: Record<string, RankEntry[]> = {};
-    entries.filter(e => e.continental_rank != null && e.continental_rank <= 100).forEach(e => {
+    rankableEntries.filter(e => e.continental_rank != null && e.continental_rank <= 100).forEach(e => {
       const key = e.category_name;
       if (!byGlobalCategory[key]) byGlobalCategory[key] = [];
       byGlobalCategory[key].push(e);
@@ -230,14 +234,15 @@ serve(async (req) => {
       group.forEach((e, i) => { e.global_rank = i + 1; });
     });
 
-    // Tier levels based on global rank
-    entries.forEach(e => {
+    // Tier levels based on global rank (only for entries ≥ passmark)
+    rankableEntries.forEach(e => {
       const rank = e.global_rank || e.continental_rank || e.regional_rank || e.country_rank || 999;
       if (rank <= 3) e.tier_level = 'gold';
       else if (rank <= 10) e.tier_level = 'silver';
       else if (rank <= 24) e.tier_level = 'bronze';
       else e.tier_level = 'unranked';
     });
+    belowPassmark.forEach(e => { e.tier_level = 'below_passmark'; });
 
     // Insert rankings
     const inserts = entries.map(e => ({

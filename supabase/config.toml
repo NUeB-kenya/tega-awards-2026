@@ -23,3 +23,5 @@ project_id = "tqagkqiodmegvfdycwtq"
     verify_jwt = false
   [functions.process-email-queue]
     verify_jwt = true
+  [functions.reassign-idle-judges]
+    verify_jwt = false

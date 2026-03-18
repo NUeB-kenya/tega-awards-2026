@@ -157,6 +157,7 @@ serve(async (req) => {
         );
 
         if (finalScore <= 0) continue;
+        // Only entries with score >= 80 get ranked; below 80 still stored but unranked
 
         entries.push({
           submission_id: sub.id,

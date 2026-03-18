@@ -46,7 +46,7 @@ const FROM_DOMAIN = "transformingeducation.ac" // Domain shown in From address (
 // The sample email uses a fixed placeholder (RFC 6761 .test TLD) so the Go backend
 // can always find-and-replace it with the actual recipient when sending test emails,
 // even if the project's domain has changed since the template was scaffolded.
-const SAMPLE_PROJECT_URL = "https://tega2026.lovable.app"
+const SAMPLE_PROJECT_URL = "https://portal.transformingeducation.ac"
 const SAMPLE_EMAIL = "user@example.test"
 const SAMPLE_DATA: Record<string, object> = {
   signup: {

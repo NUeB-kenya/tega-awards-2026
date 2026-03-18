@@ -39,7 +39,7 @@ export default function AdminJudgeApprovals() {
     if (!actionApp || !actionType || !user) return;
     const newStatus = actionType === 'approve' ? 'approved' : 'rejected';
 
-    await (supabase.from('judge_applications' as any) as any).update({
+    await supabase.from('judge_applications').update({
       status: newStatus,
       review_notes: notes,
       reviewed_by: user.id,

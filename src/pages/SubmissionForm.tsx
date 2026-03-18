@@ -257,7 +257,8 @@ export default function SubmissionForm() {
       toast({ title: 'Select at least one award category', variant: 'destructive' });
       return;
     }
-    if (orgFiles.length === 0 && !existingDocs.some(d => d.category === 'organization')) {
+    const isIndividual = profile?.account_type === 'individual';
+    if (!isIndividual && orgFiles.length === 0 && !existingDocs.some(d => d.category === 'organization')) {
       toast({ title: 'Registration documents required', description: 'Please upload your school/organisation registration documents.', variant: 'destructive' });
       return;
     }
@@ -542,8 +543,12 @@ export default function SubmissionForm() {
                 </div>
 
                 <div className="border-t border-border pt-4">
-                  <Label className="text-base font-semibold">Registration Documents *</Label>
-                  <p className="text-xs text-muted-foreground mb-3">Upload your school/organisation registration certificate or proof of establishment.</p>
+                  <Label className="text-base font-semibold">Registration Documents {profile?.account_type !== 'individual' ? '*' : '(Optional)'}</Label>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    {profile?.account_type === 'individual'
+                      ? 'If available, upload any supporting registration or identification documents.'
+                      : 'Upload your school/organisation registration certificate or proof of establishment.'}
+                  </p>
                   <div className="flex flex-wrap gap-2 mb-2">
                     {orgFiles.map((file, i) => (
                       <div key={i} className="flex items-center gap-2 bg-secondary rounded-lg px-3 py-2 text-sm">

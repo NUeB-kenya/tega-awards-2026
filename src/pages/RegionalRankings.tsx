@@ -9,11 +9,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { Map, RefreshCw, Trophy } from 'lucide-react';
 
+const PASSMARK = 80;
+
 export default function RegionalRankings() {
   const [rankings, setRankings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [recalculating, setRecalculating] = useState(false);
   const [filterRegion, setFilterRegion] = useState('all');
+  const [filterCategory, setFilterCategory] = useState('all');
   const { toast } = useToast();
 
   const fetchData = async () => {
@@ -42,16 +45,25 @@ export default function RegionalRankings() {
   };
 
   const regionsList = [...new Set(rankings.map(r => r.region_id).filter(Boolean))].sort();
-  const filtered = filterRegion === 'all' ? rankings : rankings.filter(r => r.region_id === filterRegion);
+  const categoriesList = [...new Set(rankings.map(r => (r.submissions?.award_categories || []).flat()).flat().filter(Boolean))].sort();
 
-  // Group by region
+  let filtered = filterRegion === 'all' ? rankings : rankings.filter(r => r.region_id === filterRegion);
+  if (filterCategory !== 'all') {
+    filtered = filtered.filter(r => (r.submissions?.award_categories || []).includes(filterCategory));
+  }
+
+  // Separate qualifiers from below-passmark
+  const qualifiedFiltered = filtered.filter(r => (r.final_score || 0) >= PASSMARK);
+  const belowPassmark = filtered.filter(r => (r.final_score || 0) < PASSMARK);
+
+  // Group qualifiers by region then by category
   const byRegion: Record<string, any[]> = {};
-  filtered.forEach(r => {
+  qualifiedFiltered.forEach(r => {
     const region = r.region_id || 'Unknown';
     if (!byRegion[region]) byRegion[region] = [];
     byRegion[region].push(r);
   });
-  Object.values(byRegion).forEach(arr => arr.sort((a, b) => (a.regional_rank || 999) - (b.regional_rank || 999)));
+  Object.values(byRegion).forEach(arr => arr.sort((a, b) => (b.final_score || 0) - (a.final_score || 0)));
 
   const tierBadge = (rank: number) => {
     if (rank <= 3) return <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 text-xs gap-1"><Trophy className="h-3 w-3" />Top 3</Badge>;
@@ -68,7 +80,16 @@ export default function RegionalRankings() {
             <Map className="h-7 w-7 text-warning" />
             <h1 className="font-display text-3xl font-bold">Regional <span className="text-gradient-gold">Rankings</span></h1>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Select value={filterCategory} onValueChange={setFilterCategory}>
+              <SelectTrigger className="w-[220px] bg-secondary border-border">
+                <SelectValue placeholder="Filter by category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                {categoriesList.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+              </SelectContent>
+            </Select>
             <Select value={filterRegion} onValueChange={setFilterRegion}>
               <SelectTrigger className="w-[250px] bg-secondary border-border">
                 <SelectValue placeholder="Filter by region" />
@@ -85,7 +106,7 @@ export default function RegionalRankings() {
           </div>
         </div>
         <p className="mb-8 text-muted-foreground">
-          Top 3 from each country advance here (e.g., East Africa, West Africa). Displays up to <strong>Top 50</strong> per region. These feed into Continental rankings.
+          Top 3 from each country advance here (e.g., East Africa, West Africa). Rankings are <strong>per category</strong>. Only scores <strong>≥{PASSMARK}/100</strong> qualify. These feed into Continental rankings.
         </p>
 
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
@@ -97,13 +118,13 @@ export default function RegionalRankings() {
           </Card>
           <Card className="glass-card">
             <CardContent className="pt-6 text-center">
-              <p className="text-3xl font-bold text-primary">{filtered.length}</p>
-              <p className="text-xs text-muted-foreground">Total Ranked</p>
+              <p className="text-3xl font-bold text-primary">{qualifiedFiltered.length}</p>
+              <p className="text-xs text-muted-foreground">Qualified (≥{PASSMARK})</p>
             </CardContent>
           </Card>
           <Card className="glass-card">
             <CardContent className="pt-6 text-center">
-              <p className="text-3xl font-bold text-amber-400">{filtered.filter(r => (r.regional_rank || 999) <= 3).length}</p>
+              <p className="text-3xl font-bold text-amber-400">{qualifiedFiltered.filter(r => (r.regional_rank || 999) <= 3).length}</p>
               <p className="text-xs text-muted-foreground">Regional Top 3</p>
             </CardContent>
           </Card>
@@ -111,44 +132,80 @@ export default function RegionalRankings() {
 
         {loading ? (
           <Card className="glass-card py-12 text-center"><p className="text-muted-foreground">Loading rankings...</p></Card>
-        ) : Object.keys(byRegion).length === 0 ? (
+        ) : Object.keys(byRegion).length === 0 && belowPassmark.length === 0 ? (
           <Card className="glass-card py-12 text-center"><p className="text-muted-foreground">No regional rankings yet. Run Recalculate from the Routing Engine.</p></Card>
         ) : (
-          Object.entries(byRegion).sort(([a], [b]) => a.localeCompare(b)).map(([region, entries]) => (
-            <Card key={region} className="glass-card mb-4">
-              <CardHeader className="pb-2">
-                <CardTitle className="font-display text-lg flex items-center gap-2">
-                  <Map className="h-4 w-4 text-warning" />
-                  {region}
-                  <Badge variant="outline" className="ml-2 text-xs">{entries.length} entries</Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow className="border-border">
-                      <TableHead>Rank</TableHead>
-                      <TableHead>School</TableHead>
-                      <TableHead>Country</TableHead>
-                      <TableHead>Score</TableHead>
-                      <TableHead>Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {entries.slice(0, 50).map((r: any) => (
-                      <TableRow key={r.id} className={`border-border ${(r.regional_rank || 999) <= 3 ? 'bg-amber-500/5' : ''}`}>
-                        <TableCell className="font-bold text-lg">#{r.regional_rank}</TableCell>
-                        <TableCell className="font-medium">{r.submissions?.school_name || 'Unknown'}</TableCell>
-                        <TableCell>{r.submissions?.school_country || 'Unknown'}</TableCell>
-                        <TableCell className="font-bold text-primary">{r.final_score?.toFixed(1)}</TableCell>
-                        <TableCell>{tierBadge(r.regional_rank || 999)}</TableCell>
+          <>
+            {Object.entries(byRegion).sort(([a], [b]) => a.localeCompare(b)).map(([region, entries]) => (
+              <Card key={region} className="glass-card mb-4">
+                <CardHeader className="pb-2">
+                  <CardTitle className="font-display text-lg flex items-center gap-2">
+                    <Map className="h-4 w-4 text-warning" />
+                    {region}
+                    <Badge variant="outline" className="ml-2 text-xs">{entries.length} entries</Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-border">
+                        <TableHead>Rank</TableHead>
+                        <TableHead>School</TableHead>
+                        <TableHead>Country</TableHead>
+                        <TableHead>Category</TableHead>
+                        <TableHead>Score</TableHead>
+                        <TableHead>Status</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          ))
+                    </TableHeader>
+                    <TableBody>
+                      {entries.slice(0, 50).map((r: any, idx: number) => (
+                        <TableRow key={r.id} className={`border-border ${idx < 3 ? 'bg-amber-500/5' : ''}`}>
+                          <TableCell className="font-bold text-lg">#{r.regional_rank}</TableCell>
+                          <TableCell className="font-medium">{r.submissions?.school_name || 'Unknown'}</TableCell>
+                          <TableCell>{r.submissions?.school_country || 'Unknown'}</TableCell>
+                          <TableCell className="text-xs">
+                            {(r.submissions?.award_categories || []).slice(0, 2).map((c: string) => (
+                              <Badge key={c} variant="outline" className="mr-1 text-xs">{c}</Badge>
+                            ))}
+                          </TableCell>
+                          <TableCell className="font-bold text-primary">{r.final_score?.toFixed(1)}</TableCell>
+                          <TableCell>{tierBadge(r.regional_rank || 999)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            ))}
+
+            {belowPassmark.length > 0 && (
+              <Card className="glass-card mb-4">
+                <CardHeader className="pb-2">
+                  <CardTitle className="font-display text-lg flex items-center gap-2 text-muted-foreground">
+                    Participants Below Qualifying Score ({PASSMARK}/100)
+                    <Badge variant="outline" className="ml-2 text-xs">{belowPassmark.length}</Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableBody>
+                      {belowPassmark.sort((a, b) => (b.final_score || 0) - (a.final_score || 0)).map((r: any) => (
+                        <TableRow key={r.id} className="border-border opacity-60">
+                          <TableCell className="text-sm text-muted-foreground">—</TableCell>
+                          <TableCell className="text-sm">{r.submissions?.school_name || 'Unknown'}</TableCell>
+                          <TableCell className="text-sm">{r.submissions?.school_country || 'Unknown'}</TableCell>
+                          <TableCell className="text-sm text-muted-foreground">{r.final_score?.toFixed(1)}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="text-xs border-muted-foreground text-muted-foreground">Below Passmark</Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            )}
+          </>
         )}
       </div>
     </DashboardLayout>

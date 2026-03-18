@@ -257,7 +257,8 @@ export default function SubmissionForm() {
       toast({ title: 'Select at least one award category', variant: 'destructive' });
       return;
     }
-    if (orgFiles.length === 0 && !existingDocs.some(d => d.category === 'organization')) {
+    const isIndividual = profile?.account_type === 'individual';
+    if (!isIndividual && orgFiles.length === 0 && !existingDocs.some(d => d.category === 'organization')) {
       toast({ title: 'Registration documents required', description: 'Please upload your school/organisation registration documents.', variant: 'destructive' });
       return;
     }

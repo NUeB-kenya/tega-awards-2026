@@ -26,7 +26,7 @@ export default function AdminJudgeApprovals() {
 
   const fetchApps = async () => {
     const { data } = await supabase
-      .from('judge_applications' as any)
+      .from('judge_applications')
       .select('*')
       .order('created_at', { ascending: false });
     setApps((data || []) as any[]);

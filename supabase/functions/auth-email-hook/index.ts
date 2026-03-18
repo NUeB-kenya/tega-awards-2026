@@ -40,13 +40,28 @@ const SITE_NAME = "tega2026"
 const SENDER_DOMAIN = "notify.transformingeducation.ac"
 const ROOT_DOMAIN = "transformingeducation.ac"
 const FROM_DOMAIN = "transformingeducation.ac" // Domain shown in From address (may be root or sender subdomain)
+const PORTAL_ORIGIN = `https://portal.${ROOT_DOMAIN}`
+
+function normalizePortalUrl(url?: string | null) {
+  if (!url) return PORTAL_ORIGIN
+
+  try {
+    const parsedUrl = new URL(url)
+    parsedUrl.protocol = 'https:'
+    parsedUrl.hostname = `portal.${ROOT_DOMAIN}`
+    parsedUrl.port = ''
+    return parsedUrl.toString()
+  } catch {
+    return PORTAL_ORIGIN
+  }
+}
 
 // Sample data for preview mode ONLY (not used in actual email sending).
 // URLs are baked in at scaffold time from the project's real data.
 // The sample email uses a fixed placeholder (RFC 6761 .test TLD) so the Go backend
 // can always find-and-replace it with the actual recipient when sending test emails,
 // even if the project's domain has changed since the template was scaffolded.
-const SAMPLE_PROJECT_URL = "https://portal.transformingeducation.ac"
+const SAMPLE_PROJECT_URL = PORTAL_ORIGIN
 const SAMPLE_EMAIL = "user@example.test"
 const SAMPLE_DATA: Record<string, object> = {
   signup: {

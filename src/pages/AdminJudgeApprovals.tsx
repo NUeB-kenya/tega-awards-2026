@@ -26,7 +26,7 @@ export default function AdminJudgeApprovals() {
 
   const fetchApps = async () => {
     const { data } = await supabase
-      .from('judge_applications' as any)
+      .from('judge_applications')
       .select('*')
       .order('created_at', { ascending: false });
     setApps((data || []) as any[]);
@@ -39,7 +39,7 @@ export default function AdminJudgeApprovals() {
     if (!actionApp || !actionType || !user) return;
     const newStatus = actionType === 'approve' ? 'approved' : 'rejected';
 
-    await (supabase.from('judge_applications' as any) as any).update({
+    await supabase.from('judge_applications').update({
       status: newStatus,
       review_notes: notes,
       reviewed_by: user.id,
@@ -47,7 +47,7 @@ export default function AdminJudgeApprovals() {
 
     // If approved, update user role to judge
     if (actionType === 'approve') {
-      await supabase.from('user_roles').update({ role: 'judge' as any }).eq('user_id', actionApp.user_id);
+      await supabase.from('user_roles').update({ role: 'judge' }).eq('user_id', actionApp.user_id);
       await supabase.from('notifications').insert({
         user_id: actionApp.user_id,
         title: '✅ Judge Application Approved!',

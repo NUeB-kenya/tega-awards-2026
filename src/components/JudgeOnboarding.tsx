@@ -371,11 +371,11 @@ export default function JudgeOnboarding({ existingApplication, applicationType }
 
       let error;
       if (existingApplication) {
-        ({ error } = await (supabase.from('judge_applications' as any) as any)
+        ({ error } = await supabase.from('judge_applications')
           .update(payload)
           .eq('id', existingApplication.id));
       } else {
-        ({ error } = await (supabase.from('judge_applications' as any) as any).insert(payload));
+        ({ error } = await supabase.from('judge_applications').insert(payload));
       }
 
       if (error) {

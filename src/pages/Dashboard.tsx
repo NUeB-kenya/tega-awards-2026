@@ -22,7 +22,7 @@ export default function Dashboard() {
     }
     const fetchApp = async () => {
       const { data } = await supabase
-        .from('judge_applications' as any)
+        .from('judge_applications')
         .select('*')
         .eq('user_id', user.id)
         .maybeSingle();

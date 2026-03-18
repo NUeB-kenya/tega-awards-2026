@@ -212,7 +212,7 @@ serve(async (req) => {
 
     // 3. CONTINENTAL RANK: Regional top 50 → grouped by continent+category, highest score = rank 1
     const byContinentCategory: Record<string, RankEntry[]> = {};
-    entries.filter(e => e.regional_rank != null && e.regional_rank <= 50).forEach(e => {
+    rankableEntries.filter(e => e.regional_rank != null && e.regional_rank <= 50).forEach(e => {
       const key = `${e.continent}::${e.category_name}`;
       if (!byContinentCategory[key]) byContinentCategory[key] = [];
       byContinentCategory[key].push(e);
@@ -224,7 +224,7 @@ serve(async (req) => {
 
     // 4. GLOBAL RANK: Continental top 100 → all in one pool per category, highest score = rank 1
     const byGlobalCategory: Record<string, RankEntry[]> = {};
-    entries.filter(e => e.continental_rank != null && e.continental_rank <= 100).forEach(e => {
+    rankableEntries.filter(e => e.continental_rank != null && e.continental_rank <= 100).forEach(e => {
       const key = e.category_name;
       if (!byGlobalCategory[key]) byGlobalCategory[key] = [];
       byGlobalCategory[key].push(e);

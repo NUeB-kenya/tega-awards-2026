@@ -232,12 +232,14 @@ async function handleWebhook(req: Request): Promise<Response> {
     )
   }
 
+  const normalizedConfirmationUrl = normalizePortalUrl(payload.data.url)
+
   // Build template props from payload.data (HookData structure)
   const templateProps = {
     siteName: SITE_NAME,
-    siteUrl: `https://portal.${ROOT_DOMAIN}`,
+    siteUrl: PORTAL_ORIGIN,
     recipient: payload.data.email,
-    confirmationUrl: payload.data.url,
+    confirmationUrl: normalizedConfirmationUrl,
     token: payload.data.token,
     email: payload.data.email,
     newEmail: payload.data.new_email,

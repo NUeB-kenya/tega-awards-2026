@@ -256,6 +256,7 @@ serve(async (req) => {
     const inserts = entries.map(e => ({
       submission_id: e.submission_id,
       category_id: e.category_id,
+      category_name: e.category_name,
       final_score: e.final_score,
       country_id: e.country_id,
       region_id: e.region,

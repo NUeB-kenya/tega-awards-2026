@@ -13,18 +13,23 @@ const PASSMARK = 80;
 
 export default function GlobalRankings() {
   const [rankings, setRankings] = useState<any[]>([]);
+  const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [recalculating, setRecalculating] = useState(false);
   const [filterCategory, setFilterCategory] = useState('all');
   const { toast } = useToast();
 
   const fetchData = async () => {
-    const { data } = await supabase
-      .from('application_rankings')
-      .select('*, submissions(school_name, school_country, award_categories)')
-      .not('global_rank', 'is', null)
-      .order('global_rank', { ascending: true });
-    setRankings(data || []);
+    const [{ data: rankData }, { data: catData }] = await Promise.all([
+      supabase
+        .from('application_rankings')
+        .select('*, submissions(school_name, school_country, award_categories)')
+        .not('global_rank', 'is', null)
+        .order('global_rank', { ascending: true }),
+      supabase.from('categories').select('id, name').order('name'),
+    ]);
+    setRankings(rankData || []);
+    setCategories(catData || []);
     setLoading(false);
   };
 
@@ -43,11 +48,21 @@ export default function GlobalRankings() {
     setRecalculating(false);
   };
 
-  const categoriesList = [...new Set(rankings.map(r => (r.submissions?.award_categories || []).flat()).flat().filter(Boolean))].sort();
-
   let filtered = rankings;
   if (filterCategory !== 'all') {
-    filtered = filtered.filter(r => (r.submissions?.award_categories || []).includes(filterCategory));
+    filtered = filtered.filter(r => r.category_name === filterCategory);
+  }
+
+  // Deduplicate by school when filtering by category
+  if (filterCategory !== 'all') {
+    const bySchool: Record<string, any> = {};
+    filtered.forEach(r => {
+      const key = (r.submissions?.school_name || '').trim().toUpperCase();
+      if (!bySchool[key] || (r.final_score || 0) > (bySchool[key].final_score || 0)) {
+        bySchool[key] = r;
+      }
+    });
+    filtered = Object.values(bySchool);
   }
 
   const qualifiedFiltered = filtered.filter(r => (r.final_score || 0) >= PASSMARK);
@@ -82,7 +97,7 @@ export default function GlobalRankings() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Categories</SelectItem>
-                {categoriesList.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                {categories.map(c => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}
               </SelectContent>
             </Select>
             <Button variant="outline" size="sm" className="gap-2" onClick={recalculate} disabled={recalculating}>
@@ -142,18 +157,16 @@ export default function GlobalRankings() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {qualifiedFiltered.map(r => (
+                    {qualifiedFiltered.map((r, idx) => (
                       <TableRow key={r.id} className={`border-border ${tierRowStyle(r.tier_level)}`}>
-                        <TableCell className="font-bold text-lg">#{r.global_rank}</TableCell>
+                        <TableCell className="font-bold text-lg">#{idx + 1}</TableCell>
                         <TableCell className="font-medium">{r.submissions?.school_name || 'Unknown'}</TableCell>
                         <TableCell>{r.submissions?.school_country || 'Unknown'}</TableCell>
                         <TableCell className="text-xs">
-                          {(r.submissions?.award_categories || []).slice(0, 2).map((c: string) => (
-                            <Badge key={c} variant="outline" className="mr-1 text-xs">{c}</Badge>
-                          ))}
+                          <Badge variant="outline" className="text-xs">{r.category_name || 'General'}</Badge>
                         </TableCell>
                         <TableCell className="font-bold text-primary">{r.final_score?.toFixed(1)}</TableCell>
-                        <TableCell>{tierBadge(r.global_rank || 999, r.tier_level)}</TableCell>
+                        <TableCell>{tierBadge(idx + 1, r.tier_level)}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -165,7 +178,7 @@ export default function GlobalRankings() {
               <Card className="glass-card mb-4">
                 <CardHeader className="pb-2">
                   <CardTitle className="font-display text-lg flex items-center gap-2 text-muted-foreground">
-                    Participants Below Qualifying Score ({PASSMARK}/100)
+                    Below Qualifying Score ({PASSMARK}/100)
                     <Badge variant="outline" className="ml-2 text-xs">{belowPassmark.length}</Badge>
                   </CardTitle>
                 </CardHeader>

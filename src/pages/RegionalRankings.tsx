@@ -13,6 +13,7 @@ const PASSMARK = 80;
 
 export default function RegionalRankings() {
   const [rankings, setRankings] = useState<any[]>([]);
+  const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [recalculating, setRecalculating] = useState(false);
   const [filterRegion, setFilterRegion] = useState('all');
@@ -20,12 +21,16 @@ export default function RegionalRankings() {
   const { toast } = useToast();
 
   const fetchData = async () => {
-    const { data } = await supabase
-      .from('application_rankings')
-      .select('*, submissions(school_name, school_country, award_categories)')
-      .not('regional_rank', 'is', null)
-      .order('regional_rank', { ascending: true });
-    setRankings(data || []);
+    const [{ data: rankData }, { data: catData }] = await Promise.all([
+      supabase
+        .from('application_rankings')
+        .select('*, submissions(school_name, school_country, award_categories)')
+        .not('regional_rank', 'is', null)
+        .order('regional_rank', { ascending: true }),
+      supabase.from('categories').select('id, name').order('name'),
+    ]);
+    setRankings(rankData || []);
+    setCategories(catData || []);
     setLoading(false);
   };
 
@@ -45,18 +50,27 @@ export default function RegionalRankings() {
   };
 
   const regionsList = [...new Set(rankings.map(r => r.region_id).filter(Boolean))].sort();
-  const categoriesList = [...new Set(rankings.map(r => (r.submissions?.award_categories || []).flat()).flat().filter(Boolean))].sort();
 
   let filtered = filterRegion === 'all' ? rankings : rankings.filter(r => r.region_id === filterRegion);
   if (filterCategory !== 'all') {
-    filtered = filtered.filter(r => (r.submissions?.award_categories || []).includes(filterCategory));
+    filtered = filtered.filter(r => r.category_name === filterCategory);
   }
 
-  // Separate qualifiers from below-passmark
+  // Deduplicate by school when filtering by category
+  if (filterCategory !== 'all') {
+    const bySchool: Record<string, any> = {};
+    filtered.forEach(r => {
+      const key = (r.submissions?.school_name || '').trim().toUpperCase();
+      if (!bySchool[key] || (r.final_score || 0) > (bySchool[key].final_score || 0)) {
+        bySchool[key] = r;
+      }
+    });
+    filtered = Object.values(bySchool);
+  }
+
   const qualifiedFiltered = filtered.filter(r => (r.final_score || 0) >= PASSMARK);
   const belowPassmark = filtered.filter(r => (r.final_score || 0) < PASSMARK);
 
-  // Group qualifiers by region then by category
   const byRegion: Record<string, any[]> = {};
   qualifiedFiltered.forEach(r => {
     const region = r.region_id || 'Unknown';
@@ -87,7 +101,7 @@ export default function RegionalRankings() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Categories</SelectItem>
-                {categoriesList.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                {categories.map(c => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}
               </SelectContent>
             </Select>
             <Select value={filterRegion} onValueChange={setFilterRegion}>
@@ -106,7 +120,7 @@ export default function RegionalRankings() {
           </div>
         </div>
         <p className="mb-8 text-muted-foreground">
-          Top 3 from each country advance here (e.g., East Africa, West Africa). Rankings are <strong>per category</strong>. Only scores <strong>≥{PASSMARK}/100</strong> qualify. These feed into Continental rankings.
+          Top 3 from each country advance here. Rankings are <strong>per category</strong>. Only scores <strong>≥{PASSMARK}/100</strong> qualify.
         </p>
 
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
@@ -133,7 +147,7 @@ export default function RegionalRankings() {
         {loading ? (
           <Card className="glass-card py-12 text-center"><p className="text-muted-foreground">Loading rankings...</p></Card>
         ) : Object.keys(byRegion).length === 0 && belowPassmark.length === 0 ? (
-          <Card className="glass-card py-12 text-center"><p className="text-muted-foreground">No regional rankings yet. Run Recalculate from the Routing Engine.</p></Card>
+          <Card className="glass-card py-12 text-center"><p className="text-muted-foreground">No regional rankings yet. Run Recalculate.</p></Card>
         ) : (
           <>
             {Object.entries(byRegion).sort(([a], [b]) => a.localeCompare(b)).map(([region, entries]) => (
@@ -160,16 +174,14 @@ export default function RegionalRankings() {
                     <TableBody>
                       {entries.slice(0, 50).map((r: any, idx: number) => (
                         <TableRow key={r.id} className={`border-border ${idx < 3 ? 'bg-amber-500/5' : ''}`}>
-                          <TableCell className="font-bold text-lg">#{r.regional_rank}</TableCell>
+                          <TableCell className="font-bold text-lg">#{idx + 1}</TableCell>
                           <TableCell className="font-medium">{r.submissions?.school_name || 'Unknown'}</TableCell>
                           <TableCell>{r.submissions?.school_country || 'Unknown'}</TableCell>
                           <TableCell className="text-xs">
-                            {(r.submissions?.award_categories || []).slice(0, 2).map((c: string) => (
-                              <Badge key={c} variant="outline" className="mr-1 text-xs">{c}</Badge>
-                            ))}
+                            <Badge variant="outline" className="text-xs">{r.category_name || 'General'}</Badge>
                           </TableCell>
                           <TableCell className="font-bold text-primary">{r.final_score?.toFixed(1)}</TableCell>
-                          <TableCell>{tierBadge(r.regional_rank || 999)}</TableCell>
+                          <TableCell>{tierBadge(idx + 1)}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -182,7 +194,7 @@ export default function RegionalRankings() {
               <Card className="glass-card mb-4">
                 <CardHeader className="pb-2">
                   <CardTitle className="font-display text-lg flex items-center gap-2 text-muted-foreground">
-                    Participants Below Qualifying Score ({PASSMARK}/100)
+                    Below Qualifying Score ({PASSMARK}/100)
                     <Badge variant="outline" className="ml-2 text-xs">{belowPassmark.length}</Badge>
                   </CardTitle>
                 </CardHeader>

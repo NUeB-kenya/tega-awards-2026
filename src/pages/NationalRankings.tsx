@@ -6,7 +6,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { Flag, RefreshCw, Trophy } from 'lucide-react';
 
@@ -14,6 +13,7 @@ const PASSMARK = 80;
 
 export default function NationalRankings() {
   const [rankings, setRankings] = useState<any[]>([]);
+  const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [recalculating, setRecalculating] = useState(false);
   const [filterCountry, setFilterCountry] = useState('all');
@@ -21,12 +21,16 @@ export default function NationalRankings() {
   const { toast } = useToast();
 
   const fetchData = async () => {
-    const { data } = await supabase
-      .from('application_rankings')
-      .select('*, submissions(school_name, school_country, award_categories, stage, status, average_score)')
-      .not('country_rank', 'is', null)
-      .order('country_rank', { ascending: true });
-    setRankings(data || []);
+    const [{ data: rankData }, { data: catData }] = await Promise.all([
+      supabase
+        .from('application_rankings')
+        .select('*, submissions(school_name, school_country, award_categories, stage, status, average_score)')
+        .not('country_rank', 'is', null)
+        .order('country_rank', { ascending: true }),
+      supabase.from('categories').select('id, name').order('name'),
+    ]);
+    setRankings(rankData || []);
+    setCategories(catData || []);
     setLoading(false);
   };
 
@@ -46,14 +50,23 @@ export default function NationalRankings() {
   };
 
   const countries = [...new Set(rankings.map(r => r.submissions?.school_country).filter(Boolean))].sort();
-  const categories = [...new Set(rankings.map(r => {
-    const cats = r.submissions?.award_categories || [];
-    return cats;
-  }).flat().filter(Boolean))].sort();
 
+  // Filter by category using category_name on the ranking row itself
   let filtered = filterCountry === 'all' ? rankings : rankings.filter(r => r.submissions?.school_country === filterCountry);
   if (filterCategory !== 'all') {
-    filtered = filtered.filter(r => (r.submissions?.award_categories || []).includes(filterCategory));
+    filtered = filtered.filter(r => r.category_name === filterCategory);
+  }
+
+  // Deduplicate: one entry per school per category (keep highest score)
+  if (filterCategory !== 'all') {
+    const bySchool: Record<string, any> = {};
+    filtered.forEach(r => {
+      const key = (r.submissions?.school_name || '').trim().toUpperCase();
+      if (!bySchool[key] || (r.final_score || 0) > (bySchool[key].final_score || 0)) {
+        bySchool[key] = r;
+      }
+    });
+    filtered = Object.values(bySchool);
   }
 
   // Group by country
@@ -96,7 +109,7 @@ export default function NationalRankings() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Categories</SelectItem>
-                {categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                {categories.map(c => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}
               </SelectContent>
             </Select>
             <Button variant="outline" size="sm" className="gap-2" onClick={recalculate} disabled={recalculating}>
@@ -106,7 +119,7 @@ export default function NationalRankings() {
           </div>
         </div>
         <p className="mb-8 text-muted-foreground">
-          Every country's scored submissions ranked by highest score. <strong>Top 3 per country</strong> (≥{PASSMARK}/100) are auto-promoted to Regional stage.
+          Every country's scored submissions ranked by highest score <strong>per category</strong>. <strong>Top 3 per country</strong> (≥{PASSMARK}/100) are auto-promoted to Regional stage.
         </p>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
@@ -155,12 +168,12 @@ export default function NationalRankings() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {/* Qualifiers */}
                   <Table>
                     <TableHeader>
                       <TableRow className="border-border">
                         <TableHead>Rank</TableHead>
                         <TableHead>School</TableHead>
+                        <TableHead>Category</TableHead>
                         <TableHead>Score</TableHead>
                         <TableHead>Status</TableHead>
                       </TableRow>
@@ -170,6 +183,9 @@ export default function NationalRankings() {
                         <TableRow key={r.id} className={`border-border ${idx < 3 ? 'bg-amber-500/5' : ''}`}>
                           <TableCell className="font-bold text-lg">#{idx + 1}</TableCell>
                           <TableCell className="font-medium">{r.submissions?.school_name || 'Unknown'}</TableCell>
+                          <TableCell className="text-xs">
+                            <Badge variant="outline" className="text-xs">{r.category_name || 'General'}</Badge>
+                          </TableCell>
                           <TableCell className="font-bold text-primary">{r.final_score?.toFixed(1)}</TableCell>
                           <TableCell>{tierBadge(idx + 1, r.final_score || 0)}</TableCell>
                         </TableRow>
@@ -177,7 +193,6 @@ export default function NationalRankings() {
                     </TableBody>
                   </Table>
 
-                  {/* Others - below passmark */}
                   {others.length > 0 && (
                     <div>
                       <p className="text-sm font-semibold text-muted-foreground mb-2 flex items-center gap-2">
@@ -189,6 +204,7 @@ export default function NationalRankings() {
                             <TableRow key={r.id} className="border-border opacity-60">
                               <TableCell className="font-bold text-sm text-muted-foreground">#{qualifiers.length + idx + 1}</TableCell>
                               <TableCell className="text-sm">{r.submissions?.school_name || 'Unknown'}</TableCell>
+                              <TableCell className="text-xs text-muted-foreground">{r.category_name || 'General'}</TableCell>
                               <TableCell className="text-sm text-muted-foreground">{r.final_score?.toFixed(1)}</TableCell>
                               <TableCell>
                                 <Badge variant="outline" className="text-xs border-muted-foreground text-muted-foreground">Below Passmark</Badge>

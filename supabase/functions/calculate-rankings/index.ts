@@ -108,6 +108,11 @@ serve(async (req) => {
       });
     }
 
+    // Build category name → id lookup
+    const { data: categoriesData } = await supabase.from('categories').select('id, name');
+    const categoryNameToId: Record<string, number> = {};
+    (categoriesData || []).forEach(c => { categoryNameToId[c.name.toLowerCase().trim()] = c.id; });
+
     // Build aggregated score entries per submission per category
     type RankEntry = {
       submission_id: string;
@@ -140,12 +145,13 @@ serve(async (req) => {
 
       for (const catName of categories) {
         const catScores = subScores.filter(s => s.category_name === catName);
-        const scoresToUse = catScores.length > 0 ? catScores : subScores;
+        // If no scores exist for this specific category, skip it — don't fall back to all scores
+        if (catScores.length === 0) continue;
 
-        const judgeAvg = scoresToUse.reduce((a, s) => a + (s.overall_score || 0), 0) / scoresToUse.length;
-        const impactAvg = scoresToUse.reduce((a, s) => a + (s.impact_score || 0), 0) / scoresToUse.length;
-        const innovationAvg = scoresToUse.reduce((a, s) => a + (s.innovation_score || 0), 0) / scoresToUse.length;
-        const evidenceAvg = scoresToUse.reduce((a, s) => a + (s.criterion_evidence || 0), 0) / scoresToUse.length;
+        const judgeAvg = catScores.reduce((a, s) => a + (s.overall_score || 0), 0) / catScores.length;
+        const impactAvg = catScores.reduce((a, s) => a + (s.impact_score || 0), 0) / catScores.length;
+        const innovationAvg = catScores.reduce((a, s) => a + (s.innovation_score || 0), 0) / catScores.length;
+        const evidenceAvg = catScores.reduce((a, s) => a + (s.criterion_evidence || 0), 0) / catScores.length;
 
         const integrityScore = 85;
         const finalScore = (
@@ -157,11 +163,13 @@ serve(async (req) => {
         );
 
         if (finalScore <= 0) continue;
-        // Only entries with score >= 80 get ranked; below 80 still stored but unranked
+
+        // Resolve category_id from name
+        const resolvedCatId = categoryNameToId[catName.toLowerCase().trim()] || sub.category_id || null;
 
         entries.push({
           submission_id: sub.id,
-          category_id: sub.category_id,
+          category_id: resolvedCatId,
           category_name: catName,
           country_id: cid,
           region: regionName,
@@ -248,6 +256,7 @@ serve(async (req) => {
     const inserts = entries.map(e => ({
       submission_id: e.submission_id,
       category_id: e.category_id,
+      category_name: e.category_name,
       final_score: e.final_score,
       country_id: e.country_id,
       region_id: e.region,

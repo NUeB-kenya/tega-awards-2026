@@ -1,0 +1,1 @@
+ALTER TABLE public.application_rankings ADD COLUMN IF NOT EXISTS category_name text;

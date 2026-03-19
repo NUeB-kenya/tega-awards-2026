@@ -17,6 +17,7 @@ export type Database = {
       application_rankings: {
         Row: {
           category_id: number | null
+          category_name: string | null
           continent: string | null
           continental_rank: number | null
           country_id: string | null
@@ -32,6 +33,7 @@ export type Database = {
         }
         Insert: {
           category_id?: number | null
+          category_name?: string | null
           continent?: string | null
           continental_rank?: number | null
           country_id?: string | null
@@ -47,6 +49,7 @@ export type Database = {
         }
         Update: {
           category_id?: number | null
+          category_name?: string | null
           continent?: string | null
           continental_rank?: number | null
           country_id?: string | null

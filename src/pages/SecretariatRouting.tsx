@@ -131,7 +131,7 @@ export default function SecretariatRouting() {
 
   const deduplicateBySchool = (subs: SubWithCategories[]): SubWithCategories[] => {
     if (activeCategory === 'all') return subs;
-    const bySchool = new Map<string, SubWithCategories>();
+    const bySchool: Map<string, SubWithCategories> = new Map();
     subs.forEach(s => {
       const key = s.school_name.trim().toUpperCase();
       const existing = bySchool.get(key);

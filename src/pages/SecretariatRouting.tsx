@@ -131,17 +131,17 @@ export default function SecretariatRouting() {
 
   const deduplicateBySchool = (subs: SubWithCategories[]): SubWithCategories[] => {
     if (activeCategory === 'all') return subs;
-    const bySchool: Map<string, SubWithCategories> = new Map();
+    const bySchool: Record<string, SubWithCategories> = {};
     subs.forEach(s => {
       const key = s.school_name.trim().toUpperCase();
-      const existing = bySchool.get(key);
+      const existing = bySchool[key];
       const currentScore = getCategoryScore(s) || 0;
       const existingScore = existing ? (getCategoryScore(existing) || 0) : -1;
       if (!existing || currentScore > existingScore) {
-        bySchool.set(key, s);
+        bySchool[key] = s;
       }
     });
-    return Array.from(bySchool.values());
+    return Object.values(bySchool);
   };
 
   const national = deduplicateBySchool(filterByCategory(

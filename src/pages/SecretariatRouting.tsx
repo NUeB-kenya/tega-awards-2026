@@ -120,7 +120,15 @@ export default function SecretariatRouting() {
     );
   };
 
-  // Deduplicate: when filtering by category, keep only the highest-scoring entry per school
+  const getCategoryScore = (sub: SubWithCategories): number | null => {
+    if (activeCategory === 'all') {
+      return sub.bestCategoryScore;
+    }
+    const catScore = sub.categoryScores.find(c => c.category_name === activeCategory);
+    return catScore && catScore.scores.length > 0 ? catScore.avg : null;
+  };
+
+
   const deduplicateBySchool = (subs: SubWithCategories[]): SubWithCategories[] => {
     if (activeCategory === 'all') return subs;
     const bySchool = new Map<string, SubWithCategories>();

@@ -114,28 +114,36 @@ export default function SecretariatRouting() {
 
   const filterByCategory = (subs: SubWithCategories[]) => {
     if (activeCategory === 'all') return subs;
+    // Only include entries that have actual scores for the filtered category
     return subs.filter(s => 
       s.categoryScores.some(c => c.category_name === activeCategory && c.scores.length > 0)
-      || (s.award_categories || []).includes(activeCategory)
     );
   };
 
-  const getCategoryScore = (sub: SubWithCategories): number | null => {
-    if (activeCategory === 'all') {
-      return sub.bestCategoryScore;
-    }
-    const catScore = sub.categoryScores.find(c => c.category_name === activeCategory);
-    return catScore && catScore.scores.length > 0 ? catScore.avg : null;
+  // Deduplicate: when filtering by category, keep only the highest-scoring entry per school
+  const deduplicateBySchool = (subs: SubWithCategories[]): SubWithCategories[] => {
+    if (activeCategory === 'all') return subs;
+    const bySchool = new Map<string, SubWithCategories>();
+    subs.forEach(s => {
+      const key = s.school_name.trim().toUpperCase();
+      const existing = bySchool.get(key);
+      const currentScore = getCategoryScore(s) || 0;
+      const existingScore = existing ? (getCategoryScore(existing) || 0) : -1;
+      if (!existing || currentScore > existingScore) {
+        bySchool.set(key, s);
+      }
+    });
+    return Array.from(bySchool.values());
   };
 
-  const national = filterByCategory(
+  const national = deduplicateBySchool(filterByCategory(
     submissions
       .filter(s => (s.stage || 'national') === 'national' && ['scored', 'winner', 'finalist'].includes(s.status) && (scoredSubIds.has(s.id) || s.average_score != null))
       .map(enrichSub)
-  );
-  const regional = filterByCategory(submissions.filter(s => s.stage === 'regional').map(enrichSub));
-  const continental = filterByCategory(submissions.filter(s => s.stage === 'continental').map(enrichSub));
-  const globalSubs = filterByCategory(submissions.filter(s => s.stage === 'global').map(enrichSub));
+  ));
+  const regional = deduplicateBySchool(filterByCategory(submissions.filter(s => s.stage === 'regional').map(enrichSub)));
+  const continental = deduplicateBySchool(filterByCategory(submissions.filter(s => s.stage === 'continental').map(enrichSub)));
+  const globalSubs = deduplicateBySchool(filterByCategory(submissions.filter(s => s.stage === 'global').map(enrichSub)));
   const winners = submissions.filter(s => s.status === 'winner');
 
   // Sort by active category score

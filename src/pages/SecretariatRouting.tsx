@@ -12,7 +12,29 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowRight, Trophy, Star, Map, Globe, Zap, RefreshCw, Award } from 'lucide-react';
+
+type CategoryScore = {
+  category_name: string;
+  scores: number[];
+  avg: number;
+};
+
+type SubWithCategories = {
+  id: string;
+  school_name: string;
+  school_country: string;
+  region: string | null;
+  stage: string;
+  status: string;
+  award_categories: string[] | null;
+  submitter_id: string;
+  parent_submission_id: string | null;
+  average_score: number | null;
+  categoryScores: CategoryScore[];
+  bestCategoryScore: number | null;
+};
 
 export default function SecretariatRouting() {
   const { user } = useAuth();
@@ -24,6 +46,7 @@ export default function SecretariatRouting() {
   const [allocating, setAllocating] = useState(false);
   const [declaring, setDeclaring] = useState(false);
   const [selectedWinners, setSelectedWinners] = useState<Record<string, Set<string>>>({});
+  const [activeCategory, setActiveCategory] = useState<string>('all');
 
   const fetchData = async () => {
     const [subsRes, scoresRes] = await Promise.all([
@@ -37,65 +60,121 @@ export default function SecretariatRouting() {
 
   useEffect(() => { fetchData(); }, []);
 
-  const getAvgScore = (subId: string) => {
+  // Build per-category score breakdown for a submission
+  const buildCategoryScores = (subId: string, sub: any): CategoryScore[] => {
     const subScores = scores.filter(s => s.submission_id === subId);
-    if (subScores.length > 0) {
-      return Math.round(subScores.reduce((sum, s) => sum + (s.overall_score || 0), 0) / subScores.length * 10) / 10;
-    }
-    const sub = submissions.find(s => s.id === subId);
-    if (sub?.average_score != null) return Math.round(sub.average_score * 10) / 10;
-    if (sub?.parent_submission_id) {
+    
+    // If this is a promoted entry with no direct scores, check parent
+    if (subScores.length === 0 && sub?.parent_submission_id) {
       const parentScores = scores.filter(s => s.submission_id === sub.parent_submission_id);
-      if (parentScores.length > 0) {
-        return Math.round(parentScores.reduce((sum, s) => sum + (s.overall_score || 0), 0) / parentScores.length * 10) / 10;
-      }
+      return buildCategoryScoresFromScores(parentScores, sub?.award_categories || []);
     }
-    return null;
+    
+    return buildCategoryScoresFromScores(subScores, sub?.award_categories || []);
   };
 
+  const buildCategoryScoresFromScores = (subScores: any[], awardCategories: string[]): CategoryScore[] => {
+    if (subScores.length === 0) return [];
+
+    // Group scores by category_name
+    const byCat: Record<string, number[]> = {};
+    subScores.forEach(s => {
+      const cat = s.category_name || 'General';
+      if (!byCat[cat]) byCat[cat] = [];
+      byCat[cat].push(s.overall_score || 0);
+    });
+
+    // Also include any award_categories that may not have scores yet
+    (awardCategories || []).forEach(cat => {
+      if (!byCat[cat]) byCat[cat] = [];
+    });
+
+    return Object.entries(byCat).map(([cat, vals]) => ({
+      category_name: cat,
+      scores: vals,
+      avg: vals.length > 0 ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length * 10) / 10 : 0,
+    })).sort((a, b) => b.avg - a.avg);
+  };
+
+  const enrichSub = (sub: any): SubWithCategories => {
+    const categoryScores = buildCategoryScores(sub.id, sub);
+    const bestCategoryScore = categoryScores.length > 0 
+      ? Math.max(...categoryScores.filter(c => c.scores.length > 0).map(c => c.avg), 0) 
+      : sub.average_score;
+    return { ...sub, categoryScores, bestCategoryScore };
+  };
+
+  // Collect all unique category names across all scored submissions
+  const allCategories = Array.from(new Set(
+    scores.map(s => s.category_name || 'General')
+      .concat(submissions.flatMap(s => s.award_categories || []))
+  )).filter(Boolean).sort();
+
   const scoredSubIds = new Set(scores.map(s => s.submission_id));
-  const national = submissions.filter(s => (s.stage || 'national') === 'national' && ['scored', 'winner', 'finalist'].includes(s.status) && (scoredSubIds.has(s.id) || s.average_score != null));
-  const regional = submissions.filter(s => s.stage === 'regional').sort((a, b) => (getAvgScore(b.id) || 0) - (getAvgScore(a.id) || 0));
-  const continental = submissions.filter(s => s.stage === 'continental').sort((a, b) => (getAvgScore(b.id) || 0) - (getAvgScore(a.id) || 0));
-  const globalSubs = submissions.filter(s => s.stage === 'global').sort((a, b) => (getAvgScore(b.id) || 0) - (getAvgScore(a.id) || 0));
+
+  const filterByCategory = (subs: SubWithCategories[]) => {
+    if (activeCategory === 'all') return subs;
+    return subs.filter(s => 
+      s.categoryScores.some(c => c.category_name === activeCategory && c.scores.length > 0)
+      || (s.award_categories || []).includes(activeCategory)
+    );
+  };
+
+  const getCategoryScore = (sub: SubWithCategories): number | null => {
+    if (activeCategory === 'all') {
+      return sub.bestCategoryScore;
+    }
+    const catScore = sub.categoryScores.find(c => c.category_name === activeCategory);
+    return catScore && catScore.scores.length > 0 ? catScore.avg : null;
+  };
+
+  const national = filterByCategory(
+    submissions
+      .filter(s => (s.stage || 'national') === 'national' && ['scored', 'winner', 'finalist'].includes(s.status) && (scoredSubIds.has(s.id) || s.average_score != null))
+      .map(enrichSub)
+  );
+  const regional = filterByCategory(submissions.filter(s => s.stage === 'regional').map(enrichSub));
+  const continental = filterByCategory(submissions.filter(s => s.stage === 'continental').map(enrichSub));
+  const globalSubs = filterByCategory(submissions.filter(s => s.stage === 'global').map(enrichSub));
   const winners = submissions.filter(s => s.status === 'winner');
 
+  // Sort by active category score
+  const sortByCatScore = (a: SubWithCategories, b: SubWithCategories) => (getCategoryScore(b) || 0) - (getCategoryScore(a) || 0);
+
   // National grouped by country
-  const nationalByCountry: Record<string, any[]> = {};
+  const nationalByCountry: Record<string, SubWithCategories[]> = {};
   national.forEach(s => {
     const country = s.school_country || 'Unknown';
     if (!nationalByCountry[country]) nationalByCountry[country] = [];
-    nationalByCountry[country].push({ ...s, avgScore: getAvgScore(s.id) });
+    nationalByCountry[country].push(s);
   });
-  Object.values(nationalByCountry).forEach(arr => arr.sort((a: any, b: any) => (b.avgScore || 0) - (a.avgScore || 0)));
+  Object.values(nationalByCountry).forEach(arr => arr.sort(sortByCatScore));
 
   // Regional grouped by region name
-  const regionalByRegion: Record<string, any[]> = {};
+  const regionalByRegion: Record<string, SubWithCategories[]> = {};
   regional.forEach(s => {
     const region = s.region || 'Unknown Region';
     if (!regionalByRegion[region]) regionalByRegion[region] = [];
-    regionalByRegion[region].push({ ...s, avgScore: getAvgScore(s.id) });
+    regionalByRegion[region].push(s);
   });
-  Object.values(regionalByRegion).forEach(arr => arr.sort((a: any, b: any) => (b.avgScore || 0) - (a.avgScore || 0)));
+  Object.values(regionalByRegion).forEach(arr => arr.sort(sortByCatScore));
 
   // Continental grouped by continent
-  const continentalByContinent: Record<string, any[]> = {};
+  const continentalByContinent: Record<string, SubWithCategories[]> = {};
   continental.forEach(s => {
-    // Derive continent from region name
     const region = (s.region || '').toLowerCase();
-    let continent = 'Unknown';
-    if (region.includes('africa')) continent = 'Africa';
-    else if (region.includes('europe')) continent = 'Europe';
-    else if (region.includes('asia') || region.includes('pacific')) continent = 'Asia-Pacific';
-    else if (region.includes('america') || region.includes('caribbean')) continent = 'Americas';
-    else if (region.includes('middle east')) continent = 'Middle East';
-    if (!continentalByContinent[continent]) continentalByContinent[continent] = [];
-    continentalByContinent[continent].push({ ...s, avgScore: getAvgScore(s.id) });
+    let cont = 'Unknown';
+    if (region.includes('africa')) cont = 'Africa';
+    else if (region.includes('europe')) cont = 'Europe';
+    else if (region.includes('asia') || region.includes('pacific')) cont = 'Asia-Pacific';
+    else if (region.includes('america') || region.includes('caribbean')) cont = 'Americas';
+    else if (region.includes('middle east')) cont = 'Middle East';
+    if (!continentalByContinent[cont]) continentalByContinent[cont] = [];
+    continentalByContinent[cont].push(s);
   });
-  Object.values(continentalByContinent).forEach(arr => arr.sort((a: any, b: any) => (b.avgScore || 0) - (a.avgScore || 0)));
+  Object.values(continentalByContinent).forEach(arr => arr.sort(sortByCatScore));
 
-  // Global: single flat list, already sorted
-  const globalWithScores = globalSubs.map(s => ({ ...s, avgScore: getAvgScore(s.id) }));
+  const globalWithScores = globalSubs.sort(sortByCatScore);
 
   const runRecalculate = async () => {
     setRecalculating(true);
@@ -135,7 +214,7 @@ export default function SecretariatRouting() {
     });
   };
 
-  const selectAllForStage = (stage: string, subs: any[]) => {
+  const selectAllForStage = (stage: string, subs: SubWithCategories[]) => {
     setSelectedWinners(prev => {
       const eligible = subs.filter(s => s.status !== 'winner').map(s => s.id);
       const stageSet = new Set(prev[stage] || []);
@@ -186,8 +265,7 @@ export default function SecretariatRouting() {
     return <Badge className={`${colors[status] || 'bg-secondary text-muted-foreground'} border-0 text-xs`}>{status}</Badge>;
   };
 
-  // Declare winners dialog for a grouped section
-  const renderDeclareButton = (stageKey: string, subs: any[], label: string) => {
+  const renderDeclareButton = (stageKey: string, subs: SubWithCategories[], label: string) => {
     const stageSelected = selectedWinners[stageKey] || new Set<string>();
     const eligible = subs.filter(s => s.status !== 'winner');
     const selectedCount = eligible.filter(s => stageSelected.has(s.id)).length;
@@ -205,7 +283,8 @@ export default function SecretariatRouting() {
           <AlertDialogHeader>
             <AlertDialogTitle>🏆 Declare Winners — {label}</AlertDialogTitle>
             <AlertDialogDescription>
-              You are about to officially declare <strong>{selectedCount} submission{selectedCount !== 1 ? 's' : ''}</strong> as winners from <strong>{label}</strong>.
+              You are about to officially declare <strong>{selectedCount} submission{selectedCount !== 1 ? 's' : ''}</strong> as winners from <strong>{label}</strong>
+              {activeCategory !== 'all' && <> in category <strong>{activeCategory}</strong></>}.
               <br /><br />
               Each winner will be notified via in-app notification and email. This action cannot be undone.
             </AlertDialogDescription>
@@ -221,10 +300,10 @@ export default function SecretariatRouting() {
     );
   };
 
-  // Grouped card with table for a set of submissions
-  const renderGroupedCard = (groupName: string, subs: any[], stageKey: string, showCountry = true) => {
+  const renderGroupedCard = (groupName: string, subs: SubWithCategories[], stageKey: string, showCountry = true) => {
     const stageSelected = selectedWinners[stageKey] || new Set<string>();
     const eligible = subs.filter(s => s.status !== 'winner');
+    const showingAllCategories = activeCategory === 'all';
 
     return (
       <Card key={groupName} className="glass-card mb-4">
@@ -235,7 +314,7 @@ export default function SecretariatRouting() {
           </CardTitle>
           {renderDeclareButton(stageKey, subs, groupName)}
         </CardHeader>
-        <CardContent>
+        <CardContent className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow className="border-border">
@@ -250,15 +329,20 @@ export default function SecretariatRouting() {
                 <TableHead>Rank</TableHead>
                 <TableHead>School</TableHead>
                 {showCountry && <TableHead>Country</TableHead>}
-                <TableHead>Score</TableHead>
+                {showingAllCategories ? (
+                  <TableHead>Category Scores</TableHead>
+                ) : (
+                  <TableHead>{activeCategory} Score</TableHead>
+                )}
                 <TableHead>Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {subs.length === 0 ? (
                 <TableRow><TableCell colSpan={showCountry ? 6 : 5} className="text-center text-muted-foreground">No submissions</TableCell></TableRow>
-              ) : subs.map((sub: any, i: number) => {
+              ) : subs.map((sub, i) => {
                 const isWinner = sub.status === 'winner';
+                const catScore = getCategoryScore(sub);
                 return (
                   <TableRow key={sub.id} className={`border-border ${i < 3 ? 'bg-success/5' : ''} ${isWinner ? 'bg-success/10' : ''}`}>
                     <TableCell>
@@ -274,7 +358,33 @@ export default function SecretariatRouting() {
                     </TableCell>
                     <TableCell className="font-medium">{sub.school_name}</TableCell>
                     {showCountry && <TableCell>{sub.school_country}</TableCell>}
-                    <TableCell className={`font-bold ${scoreColor(sub.avgScore)}`}>{sub.avgScore != null ? sub.avgScore : '—'}</TableCell>
+                    <TableCell>
+                      {showingAllCategories ? (
+                        <div className="flex flex-col gap-1">
+                          {sub.categoryScores.length > 0 ? sub.categoryScores.map(cs => (
+                            <div key={cs.category_name} className="flex items-center gap-2 text-sm">
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0 max-w-[160px] truncate">
+                                {cs.category_name}
+                              </Badge>
+                              <span className={`font-bold ${scoreColor(cs.avg)}`}>
+                                {cs.scores.length > 0 ? cs.avg : '—'}
+                              </span>
+                              {cs.scores.length > 0 && (
+                                <span className="text-[10px] text-muted-foreground">
+                                  ({cs.scores.length} judge{cs.scores.length !== 1 ? 's' : ''})
+                                </span>
+                              )}
+                            </div>
+                          )) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </div>
+                      ) : (
+                        <span className={`font-bold ${scoreColor(catScore)}`}>
+                          {catScore != null ? catScore : '—'}
+                        </span>
+                      )}
+                    </TableCell>
                     <TableCell>{stageBadge(sub.status)}</TableCell>
                   </TableRow>
                 );
@@ -302,9 +412,23 @@ export default function SecretariatRouting() {
             </Button>
           </div>
         </div>
-        <p className="mb-8 text-muted-foreground">
-          Rankings are computed live. Top 3 per country → Regional (by region e.g. East Africa) → Continental (by continent) → Global. Click <strong>Recalculate & Auto-Promote</strong> to rank and promote winners automatically.
+        <p className="mb-4 text-muted-foreground">
+          Rankings are computed per category. Filter by category to see scores and declare winners for each award independently.
         </p>
+
+        {/* Category filter tabs */}
+        <div className="mb-6">
+          <Tabs value={activeCategory} onValueChange={setActiveCategory}>
+            <TabsList className="flex-wrap h-auto gap-1 bg-muted/50 p-1">
+              <TabsTrigger value="all" className="text-xs">All Categories</TabsTrigger>
+              {allCategories.map(cat => (
+                <TabsTrigger key={cat} value={cat} className="text-xs max-w-[200px] truncate">
+                  {cat}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+        </div>
 
         {/* Summary cards */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
@@ -337,39 +461,38 @@ export default function SecretariatRouting() {
           )
         )}
 
-        {/* ===== REGIONAL: by Region (East Africa, West Africa, etc.) ===== */}
+        {/* ===== REGIONAL ===== */}
         <h2 className="font-display text-xl font-bold mb-4 mt-8 flex items-center gap-2">
           <Map className="h-5 w-5 text-warning" /> Regional Stage — by Region
         </h2>
-        <p className="text-sm text-muted-foreground mb-4">Top 3 from each country are promoted here, grouped by their region (e.g. East Africa, West Africa, Southern Europe).</p>
+        <p className="text-sm text-muted-foreground mb-4">Top 3 from each country are promoted here, grouped by region.</p>
         {Object.keys(regionalByRegion).length === 0 ? (
-          <Card className="glass-card py-8 text-center mb-8"><p className="text-muted-foreground">No regional-stage submissions yet. Run Recalculate to promote top 3 from each country.</p></Card>
+          <Card className="glass-card py-8 text-center mb-8"><p className="text-muted-foreground">No regional-stage submissions yet.</p></Card>
         ) : (
           Object.entries(regionalByRegion).sort(([a], [b]) => a.localeCompare(b)).map(([region, subs]) =>
             renderGroupedCard(region, subs, `regional_${region}`, true)
           )
         )}
 
-        {/* ===== CONTINENTAL: by Continent ===== */}
+        {/* ===== CONTINENTAL ===== */}
         <h2 className="font-display text-xl font-bold mb-4 mt-8 flex items-center gap-2">
           <Globe className="h-5 w-5 text-accent" /> Continental Stage — by Continent
         </h2>
-        <p className="text-sm text-muted-foreground mb-4">Top 50 from each region are promoted here, grouped by continent. Ranked 1 to 100.</p>
+        <p className="text-sm text-muted-foreground mb-4">Top 50 from each region are promoted here.</p>
         {Object.keys(continentalByContinent).length === 0 ? (
-          <Card className="glass-card py-8 text-center mb-8"><p className="text-muted-foreground">No continental-stage submissions yet. Run Recalculate to promote regional qualifiers.</p></Card>
+          <Card className="glass-card py-8 text-center mb-8"><p className="text-muted-foreground">No continental-stage submissions yet.</p></Card>
         ) : (
           Object.entries(continentalByContinent).sort(([a], [b]) => a.localeCompare(b)).map(([continent, subs]) =>
             renderGroupedCard(continent, subs, `continental_${continent}`, true)
           )
         )}
 
-        {/* ===== GLOBAL: single unified list ===== */}
+        {/* ===== GLOBAL ===== */}
         <h2 className="font-display text-xl font-bold mb-4 mt-8 flex items-center gap-2">
           <Trophy className="h-5 w-5 text-success" /> Global Stage — All Finalists
         </h2>
-        <p className="text-sm text-muted-foreground mb-4">Top 100 from each continent feed into the global pool, ranked from #1 (highest score) to last.</p>
         {globalWithScores.length === 0 ? (
-          <Card className="glass-card py-8 text-center mb-8"><p className="text-muted-foreground">No global-stage submissions yet. Run Recalculate to promote continental qualifiers.</p></Card>
+          <Card className="glass-card py-8 text-center mb-8"><p className="text-muted-foreground">No global-stage submissions yet.</p></Card>
         ) : (
           renderGroupedCard('Global Finalists', globalWithScores, 'global', true)
         )}

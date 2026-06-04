@@ -103,12 +103,14 @@ export default function SecretariatUsers() {
                 <TableHead>Change Role</TableHead>
                 <TableHead>Credentials</TableHead>
                 <TableHead>Joined</TableHead>
+                {isAdmin && <TableHead>Activity</TableHead>}
                 {isAdmin && <TableHead>Actions</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
-                <TableRow><TableCell colSpan={isAdmin ? 8 : 7} className="text-center text-muted-foreground">Loading...</TableCell></TableRow>
+                <TableRow><TableCell colSpan={isAdmin ? 9 : 7} className="text-center text-muted-foreground">Loading...</TableCell></TableRow>
+
               ) : users.map(u => (
                 <TableRow key={u.id} className="border-border">
                   <TableCell className="font-medium">{u.full_name}</TableCell>

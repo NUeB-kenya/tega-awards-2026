@@ -55,10 +55,24 @@ export function useAuth() {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Heartbeat: keep last_seen_at fresh while the user is active in the app
+  useEffect(() => {
+    if (!user) return;
+    const ping = () => {
+      supabase.from('profiles').update({ last_seen_at: new Date().toISOString() } as any).eq('user_id', user.id).then(() => {});
+    };
+    ping();
+    const interval = setInterval(ping, 60_000);
+    const onVisible = () => { if (document.visibilityState === 'visible') ping(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => { clearInterval(interval); document.removeEventListener('visibilitychange', onVisible); };
+  }, [user]);
+
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     return { error };
   };
+
 
   const signUp = async (email: string, password: string, fullName: string, country?: string, phone?: string, accountType?: string) => {
     // Both 'applicant' and 'individual' map to submitter role
@@ -75,8 +89,12 @@ export function useAuth() {
   };
 
   const signOut = async () => {
+    if (user) {
+      await supabase.from('profiles').update({ last_sign_out_at: new Date().toISOString() } as any).eq('user_id', user.id);
+    }
     await supabase.auth.signOut();
   };
+
 
   return { user, session, role, profile, loading, signIn, signUp, signOut };
 }

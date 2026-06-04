@@ -103,12 +103,14 @@ export default function SecretariatUsers() {
                 <TableHead>Change Role</TableHead>
                 <TableHead>Credentials</TableHead>
                 <TableHead>Joined</TableHead>
+                {isAdmin && <TableHead>Activity</TableHead>}
                 {isAdmin && <TableHead>Actions</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
-                <TableRow><TableCell colSpan={isAdmin ? 8 : 7} className="text-center text-muted-foreground">Loading...</TableCell></TableRow>
+                <TableRow><TableCell colSpan={isAdmin ? 9 : 7} className="text-center text-muted-foreground">Loading...</TableCell></TableRow>
+
               ) : users.map(u => (
                 <TableRow key={u.id} className="border-border">
                   <TableCell className="font-medium">{u.full_name}</TableCell>
@@ -142,6 +144,23 @@ export default function SecretariatUsers() {
                   </TableCell>
                   <TableCell className="text-muted-foreground text-xs">{new Date(u.created_at).toLocaleDateString()}</TableCell>
                   {isAdmin && (
+                    <TableCell className="text-xs">
+                      {u.last_seen_at && (Date.now() - new Date(u.last_seen_at).getTime()) < 5 * 60_000 ? (
+                        <Badge className="bg-success/20 text-success border-0 gap-1.5">
+                          <span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
+                          Active
+                        </Badge>
+                      ) : (
+                        <span className="text-muted-foreground">
+                          {u.last_sign_out_at
+                            ? `Logged out ${new Date(u.last_sign_out_at).toLocaleString()}`
+                            : 'Offline'}
+                        </span>
+                      )}
+                    </TableCell>
+                  )}
+                  {isAdmin && (
+
                     <TableCell>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>

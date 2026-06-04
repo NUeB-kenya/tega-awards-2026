@@ -89,8 +89,12 @@ export function useAuth() {
   };
 
   const signOut = async () => {
+    if (user) {
+      await supabase.from('profiles').update({ last_sign_out_at: new Date().toISOString() } as any).eq('user_id', user.id);
+    }
     await supabase.auth.signOut();
   };
+
 
   return { user, session, role, profile, loading, signIn, signUp, signOut };
 }

@@ -144,6 +144,23 @@ export default function SecretariatUsers() {
                   </TableCell>
                   <TableCell className="text-muted-foreground text-xs">{new Date(u.created_at).toLocaleDateString()}</TableCell>
                   {isAdmin && (
+                    <TableCell className="text-xs">
+                      {u.last_seen_at && (Date.now() - new Date(u.last_seen_at).getTime()) < 5 * 60_000 ? (
+                        <Badge className="bg-success/20 text-success border-0 gap-1.5">
+                          <span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
+                          Active
+                        </Badge>
+                      ) : (
+                        <span className="text-muted-foreground">
+                          {u.last_sign_out_at
+                            ? `Logged out ${new Date(u.last_sign_out_at).toLocaleString()}`
+                            : 'Offline'}
+                        </span>
+                      )}
+                    </TableCell>
+                  )}
+                  {isAdmin && (
+
                     <TableCell>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
